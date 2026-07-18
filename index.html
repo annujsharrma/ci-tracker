@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#16302B">
+<title>C&I Follow-up Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#F6F7F4; --card:#FFFFFF; --ink:#16302B; --muted:#6B7A76;
+    --line:#E3E7E2; --ok:#2E7D5B; --warn:#C97A1B; --late:#C0392B; --chip:#EEF1ED;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink); background:var(--bg);}
+  .app{max-width:520px; margin:0 auto; min-height:100vh; padding-bottom:110px; position:relative;}
+  .hdr{padding:18px 16px 10px; display:flex; justify-content:space-between; align-items:flex-start;}
+  .hdr .eyebrow{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600;}
+  .hdr h1{font-size:22px; font-weight:800; letter-spacing:-.02em; margin-top:2px;}
+  .entbtn{border:1px solid var(--line); background:var(--card); color:var(--ink);
+    border-radius:999px; padding:9px 14px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .counts{display:flex; gap:8px; padding:10px 16px 4px;}
+  .count{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+  .count b{display:block; font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;}
+  .count span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600;}
+  .count.late b{color:var(--late);}
+  .count.pend b{color:var(--warn);}
+  .count.open b{color:var(--ok);}
+  .srch{padding:10px 16px 0;}
+  .srch input{width:100%; border:1px solid var(--line); border-radius:999px; padding:10px 16px;
+    font-size:14px; font-family:inherit; background:var(--card); color:var(--ink);}
+  .tabs{display:flex; gap:6px; padding:12px 16px 8px;}
+  .tab{flex:1; border:1px solid var(--line); background:var(--card); color:var(--muted);
+    border-radius:999px; padding:8px 0; font-size:13px; font-weight:600; cursor:pointer;}
+  .tab.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .list{padding:6px 16px;}
+  .empty{padding:48px 20px; text-align:center; color:var(--muted); font-size:14px; line-height:1.5;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px;}
+  .card.flag{border-color:var(--late); box-shadow:0 0 0 1px var(--late) inset;}
+  .row1{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  .who .nm{font-size:16px; font-weight:700;}
+  .who .co{font-size:13px; color:var(--muted); margin-top:1px;}
+  .dchip{min-width:78px; text-align:center; border-radius:10px; padding:7px 8px; font-variant-numeric:tabular-nums;}
+  .dchip b{display:block; font-size:15px; font-weight:800; line-height:1.1;}
+  .dchip span{font-size:10px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
+  .d-ok{background:#E7F2EC; color:var(--ok);}
+  .d-warn{background:#FBF0DF; color:var(--warn);}
+  .d-late{background:#F9E7E4; color:var(--late);}
+  .meta{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
+  .pill{font-size:11px; font-weight:600; background:var(--chip); color:var(--ink); border-radius:999px; padding:4px 9px;}
+  .pill.alert{background:var(--late); color:#fff;}
+  .pill.chased{background:#FBF0DF; color:var(--warn);}
+  .pill.cat{background:var(--ink); color:#fff;}
+  .contact{font-size:13px; margin-top:8px;}
+  .contact a{color:var(--ok); font-weight:700; text-decoration:none;}
+  .fulog{font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; white-space:pre-line;}
+  .acts{display:flex; gap:6px; margin-top:10px;}
+  .btn{flex:1; border:1px solid var(--line); background:var(--card); border-radius:10px;
+    padding:9px 4px; font-size:12.5px; font-weight:600; color:var(--ink); cursor:pointer;}
+  .btn.pri{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .btn.grn{background:var(--ok); color:#fff; border-color:var(--ok);}
+  .btn.sm{flex:0 0 52px;}
+  .btn.del{flex:0 0 44px; color:var(--late);}
+  .fab{position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; border:none; border-radius:999px;
+    padding:14px 30px; font-size:15px; font-weight:700; cursor:pointer;
+    box-shadow:0 8px 20px rgba(22,48,43,.30); z-index:5;}
+  .sheetbg{position:fixed; inset:0; background:rgba(15,25,22,.45); display:none; z-index:10;}
+  .sheetbg.open{display:block;}
+  .sheet{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:520px;
+    background:var(--card); border-radius:18px 18px 0 0; padding:20px 18px 26px; z-index:11;
+    display:none; max-height:90vh; overflow-y:auto;}
+  .sheet.open{display:block;}
+  .sheet h2{font-size:17px; font-weight:800; margin-bottom:14px;}
+  .fld{margin-bottom:12px;}
+  .fld label{display:block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
+  .fld input,.fld select,.fld textarea{width:100%; border:1px solid var(--line); border-radius:10px;
+    padding:11px 12px; font-size:15px; font-family:inherit; color:var(--ink); background:var(--bg);}
+  .fld textarea{resize:vertical; min-height:56px;}
+  .two{display:flex; gap:10px;}
+  .two .fld{flex:1;}
+  .seg{display:flex; gap:6px; margin-bottom:14px;}
+  .seg button{flex:1; border:1px solid var(--line); background:var(--bg); color:var(--muted);
+    border-radius:10px; padding:10px 4px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .seg button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .codrop{position:relative;}
+  .colist{position:absolute; left:0; right:0; top:100%; background:var(--card); border:1px solid var(--line);
+    border-radius:10px; max-height:200px; overflow-y:auto; z-index:30; box-shadow:0 8px 20px rgba(0,0,0,.12); display:none;}
+  .colist.open{display:block;}
+  .coopt{padding:11px 12px; font-size:14px; border-bottom:1px solid var(--line); cursor:pointer;}
+  .coopt:last-child{border-bottom:none;}
+  .coopt.addnew{color:var(--ok); font-weight:700;}
+  .savebar{display:flex; gap:8px; margin-top:6px;}
+  .savebar .btn{padding:13px 0; font-size:14px;}
+  .note{font-size:12px; color:var(--muted); text-align:center; padding:14px 24px 4px; line-height:1.5;}
+  .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
+    font-size:13px; font-weight:600; padding:10px 18px; border-radius:999px; z-index:50; display:none; max-width:90%; text-align:center;}
+  .panel{position:fixed; inset:0; background:var(--bg); z-index:20; display:none; overflow-y:auto;}
+  .panel.open{display:block;}
+  .panel-in{max-width:520px; margin:0 auto; padding:16px 16px 40px;}
+  .panel-hdr{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
+  .backbtn{border:none; background:none; font-size:22px; cursor:pointer; color:var(--ink); padding:4px 8px;}
+  .panel-hdr h2{font-size:19px; font-weight:800; flex:1;}
+  .addco{border:1px solid var(--ok); background:#E7F2EC; color:var(--ok); border-radius:999px;
+    padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer;}
+  .ecard{background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:8px; overflow:hidden;}
+  .ecard .ehead{padding:13px 14px; font-size:15px; font-weight:700; cursor:pointer; display:flex; justify-content:space-between;}
+  .ecard .ebody{padding:0 14px 12px; display:none;}
+  .ecard.open .ebody{display:block;}
+  .ebody .lines{font-size:13px; line-height:1.7; white-space:pre-line; color:var(--ink);}
+  .ebody textarea{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px;
+    font-size:13px; font-family:inherit; min-height:140px; background:var(--bg); margin-top:8px;}
+  .ebody .eacts{display:flex; gap:6px; margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hdr">
+    <div>
+      <div class="eyebrow">C&amp;I Desk · SGRH</div>
+      <h1>Follow-up Tracker</h1>
+    </div>
+    <button class="entbtn" onclick="openMenu()" style="font-size:17px;padding:7px 16px;">＋</button>
+  </div>
+
+  <div class="counts">
+    <div class="count late"><b id="cLate">0</b><span>Action due</span></div>
+    <div class="count pend"><b id="cPend">0</b><span>Waiting</span></div>
+    <div class="count open"><b id="cOpen">0</b><span>Open</span></div>
+  </div>
+
+  <div class="srch"><input id="srch" placeholder="Search patient, company, doctor…"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-tab="domestic">Domestic</button>
+    <button class="tab" data-tab="international">International</button>
+    <button class="tab" data-tab="open">Open</button>
+  </div>
+
+  <div class="list" id="list"></div>
+  <div class="note" id="note"></div>
+
+  <button class="fab" id="fabAdd">+ New case</button>
+</div>
+
+<!-- New/Edit case sheet -->
+<div class="sheetbg" id="sheetbg"></div>
+<div class="sheet" id="sheet">
+  <h2 id="sheetTitle">New case</h2>
+  <div class="seg" id="catSeg">
+    <button data-cat="company" class="on">Company</button>
+    <button data-cat="international">International</button>
+    <button data-cat="cash">Cash</button>
+  </div>
+
+  <div class="fld"><label>Patient name *</label><input id="fNm" placeholder="e.g. Ramesh Kumar"></div>
+
+  <div id="grpCompany">
+    <div class="two">
+      <div class="fld"><label>Emp ID *</label><input id="fEmp" placeholder="e.g. 45210"></div>
+      <div class="fld"><label>Reg ID *</label><input id="fReg" placeholder="e.g. SGRH/2026/..."></div>
+    </div>
+    <div class="fld codrop"><label>Company * (search &amp; select)</label>
+      <input id="fCoSel" placeholder="Type to search company…" autocomplete="off">
+      <div class="colist" id="coList"></div>
+    </div>
+    <div class="two">
+      <div class="fld"><label>Approval days</label><input id="fAd" type="number" min="1" placeholder="default 7"></div>
+      <div class="fld"><label>Follow-up days</label><input id="fDy" type="number" min="1" placeholder="1"></div>
+    </div>
+    <div class="fld"><label>Company email (for approval mail)</label><input id="fEm" type="email" placeholder="hr@company.com"></div>
+  </div>
+
+  <div id="grpIntl" style="display:none;">
+    <div class="fld"><label>Reg No *</label><input id="fRegI" placeholder="e.g. SGRH/2026/..."></div>
+    <div class="fld"><label>Admitted in *</label><input id="fWard" placeholder="e.g. Ward 4B / Room 312"></div>
+    <div class="two">
+      <div class="fld"><label>Admission date *</label><input id="fDtI" type="date"></div>
+      <div class="fld"><label>Admission time *</label><input id="fTmI" type="time"></div>
+    </div>
+    <div class="fld"><label>Country</label><input id="fCty" placeholder="e.g. Bangladesh"></div>
+  </div>
+
+  <div id="grpCash" style="display:none;">
+    <div class="fld"><label>Reg ID</label><input id="fRegC" placeholder="e.g. SGRH/2026/..."></div>
+  </div>
+
+  <div class="fld"><label>Patient phone</label><input id="fPh" type="tel" placeholder="98XXXXXXXX"></div>
+  <div class="fld"><label>Treating doctor *</label><input id="fDr" placeholder="e.g. Dr. Mehta"></div>
+
+  <div id="grpDom2">
+    <div class="fld"><label>Date of admission *</label><input id="fDt" type="date"></div>
+  </div>
+
+  <div class="fld"><label>Remarks</label><textarea id="fNo" placeholder="Any remarks — ward, UHID, reference, condition…"></textarea></div>
+  <div class="savebar">
+    <button class="btn" id="btnCancel">Cancel</button>
+    <button class="btn pri" id="btnSave">Save case</button>
+  </div>
+</div>
+
+<!-- Discharge sheet -->
+<div class="sheet" id="dsheet">
+  <h2>Discharge patient</h2>
+  <div class="fulog" id="dWho" style="margin:-6px 0 12px;"></div>
+  <div class="two">
+    <div class="fld"><label>Date of discharge *</label><input id="dDt" type="date"></div>
+    <div class="fld"><label>Time of discharge *</label><input id="dTm" type="time"></div>
+  </div>
+  <div class="fulog" id="dNote"></div>
+  <div class="savebar">
+    <button class="btn" onclick="closeDsheet()">Cancel</button>
+    <button class="btn pri" onclick="saveDischarge()">Confirm discharge</button>
+  </div>
+</div>
+
+<!-- Reference menu -->
+<div class="sheet" id="menuSheet">
+  <h2>Desk reference</h2>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <button class="btn" style="padding:14px;font-size:14px;" onclick="closeMenu();openEnts()">📋 Entitlements</button>
+    <button class="btn" style="padding:14px;font-size:14px;" onclick="closeMenu();openCos()">🏥 Companies &amp; what we offer (IPD/OPD)</button>
+  </div>
+</div>
+
+<!-- Companies panel -->
+<div class="panel" id="coPanel">
+  <div class="panel-in">
+    <div class="panel-hdr">
+      <button class="backbtn" onclick="closeCos()">←</button>
+      <h2>Empanelled companies</h2>
+      <button class="addco" onclick="addCo()">+ Add</button>
+    </div>
+    <div class="srch" style="padding:0 0 12px;"><input id="coSrchP" placeholder="Search company or acronym…"></div>
+    <div id="coListP"></div>
+  </div>
+</div>
+
+<!-- Entitlements panel -->
+<div class="panel" id="entPanel">
+  <div class="panel-in">
+    <div class="panel-hdr">
+      <button class="backbtn" onclick="closeEnts()">←</button>
+      <h2>Entitlements</h2>
+      <button class="addco" onclick="addCompany()">+ Add company</button>
+    </div>
+    <div class="srch" style="padding:0 0 12px;"><input id="entSrch" placeholder="Search company…"></div>
+    <div id="entList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1';
+const SNOOZE_DAYS=2, WINDOW_H=24;
+const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
+
+const ENT_SEED={
+"NTPC":"Deluxe — E7 and above\nSingle — E0 to E6 / S1 to SSG / W7 to WSG\nSemi-Paying/Cat-3 — W0 to W6",
+"ONGC":"Suite Room — Director's and CMD\nCAT-1 Single — S Level, E0 to E5\nCAT-1 Single — E6 & above\nCAT-2 (Semi-Nursing) — Class W4, IV & III level",
+"BEL":"CAT-1 Single — E4 and above\nCAT-2 (Semi-Nursing) — All employees including Non-Executive, TC, Executive upto E-III grade",
+"IOCL":"Cat-3 (Semi-Paying) — Grade I to IX\nCat-2 (Semi-Nursing) — Grade A, B, C\nCat-1D (Single Room) — Grade D, E, F\nCat-1C (Deluxe) — Grade G & Above",
+"DMRC":"MD/Directors — ₹18,000/day — Suite/Deluxe Room — Nursing Home\nED/HODs — ₹15,000/day — Deluxe Room — Semi Nursing Home\nAGM/JGM/Sr. DGM — ₹11,250/day — Single Room — Semi Nursing Home\nDGMs/Managers/Asst. Managers/Sr. Supervisors — ₹8,400/day — Single Room — Semi Nursing Home\nSupervisors — ₹6,750/day — Two/Three bedded room — Semi Private/Semi Paying\nNon-Supervisors — ₹4,800/day — Economy/General Ward — Semi Paying",
+"GAIL":"Appropriate class of accommodation — Board Appointees\nDeluxe Room — E7 to E9\nDeluxe Room — E5 to E6\nCat-1D (Single Room) — E2 to E4\nCat-2 (Semi-Nursing) — E0 to E1\nCat-2 (Semi-Nursing) — S7 & S6\nCat-3 (Semi-Paying) — S5 & below\nNote: For retired employees, entitlement is 1 category lower than actual entitlement",
+"EIL":"Cat-3 (Semi-Paying) — Grade 1 to 4\nCat-2 (Semi-Nursing) — Grade 5 to 14\nCat-1D (Single Room) — Grade 15 to 20\nCat-1C (Deluxe) — Grade 21 to 22",
+"BHEL":"Super Deluxe Room — Directors/CMD — SGRH rate ₹19,800 — Recovery ₹5,000/day\nDeluxe Room — E8 to E9 — SGRH rate ₹15,120 — Recovery ₹3,620/day\nSingle Room Cat-1D — E5 to E7 — SGRH rate ₹11,250 — Recovery ₹2,350/day\nTwin-Sharing Cat-2 — AVI/BVI to E4 — SGRH rate ₹8,100 — Recovery ₹2,300/day\nSemi-Paying Cat-3 — AV/BV & Below — SGRH rate ₹6,120 — Recovery ₹2,020/day\n(Rates 2025-26 with 10% discount, GST extra; recovery from beneficiary per day + total GST of bill)",
+"IRCTC":"Cat-3 Semi-Paying — W1 to W6 & S1 to S4\nCat-2 Semi-Nursing — E0 to E2\nCat-1D Single Room — E3 to E6\nDeluxe Room — E7 & E8\nSuite Room — E9 to E10 (Directors and CMD)",
+"AAI":"Cat-3 (Semi-Paying) — NE-1 to NE-7\nCat-2 (Semi-Nursing) — NE-8 to NE-10 / E-1 to E-5\nCat-1D (Single Room) — E-6 to E-7\nCat-1C (Deluxe) — E-8 to E-9\nSuite — Chairman and Board Members",
+"PGCIL":"Cat-2 (Semi-Nursing) — W0 to W4\nCat-2 (Semi-Nursing) — W5 to W7\nCat-1D (Single Room) — W8 to W11, WSG, S1 to S4, SSG, E2 to E3\nCat-1D (Single Room) — E4 to E5\nCat-1D (Single Room) — E6 to E7\nCat-1C (Deluxe Room) — E8 and Above",
+"SAIL":"Cat-2 Semi-Nursing — All employees upto E3 grade and S1 to S11\nCat-1D — E4 to E8",
+"NHPC":"Cat-3 (Semi-Paying) — W0 to W5\nCat-2 (Semi-Nursing) — W6 to W10\nCat-2 (Semi-Nursing) — All Supervisors\nCat-1D (Single Room) — E0 to E5\nCat-1C (Deluxe Room) — E6 to E7\nCat-1B (Suite Room) — E8 and E9\nCat-1A (Premium Suite Room) — Directors and CMD"
+};
+
+
+/* ---------- empanelled companies (IPD/OPD offers) ---------- */
+const A_OPD="Rs. 1000 per Consultation (except Psychiatry and Psychology), to be deposited by the patients in OPD. No Discount on Investigations, Procedures done on OPD basis.";
+const B_OPD="Rs. 1,000/- per consultation in OPD, 1500/- for Psychiatry and Psychology. No Discount on Investigation, Procedures on OPD basis.";
+const C_OPD="Rs. 1,000/- per consultation in OPD (except Psychiatry and Psychology). No Discount on Investigation, Procedures on OPD basis.";
+const I1="10% Discount on IPD Billing excluding medical and non-medical consumables and outsourced services Medicine investigations like PET Scan; MRI and CT Scan etc.";
+const I2="10% discount on IPD billing, excluding the cost of Medicines, Medical and Non-Medical Consumables, Outsourced Diagnostic Services like Nuclear Medicine, PET Scan, MRI, CT Scan etc.";
+const I3="10% on IPD except medicines, consumables, CT Scan, MRI, Nuclear Medicine & PET CT and outsourced Investigation";
+const CO_SEED=[
+["AAI","Airport Authority of India","Y","Credit, "+I3,A_OPD],
+["AIRTEL","AIRTEL","Y","CASH, 15% Discount on IPD bills excluding medicines, medical and non-medical consumables, isotope charges, dye, contrast, any medicines used during the procedure and any other outsourced services availed during the treatment.",B_OPD+" +₹500 addition for every hour session"],
+["AKU","AL Karim University","Y","Cash Basis. 15% discount on IPD billing, excluding medicines, medical and non-medical consumables, and any other outsourced services availed during the treatment.","₹1,000/- per consultation in OPD, 1500/- for Psychiatry and Psychology (up to 30 minutes, +500/- every 15 minutes). One-time registration charge of Rs 200 for new patients. No Discount on Investigation, Procedures on OPD basis."],
+["BALCO","Bharat Aluminum Company","Y",I3,"NO"],
+["BCPL","Brahmaputra Cracker & Polymer Ltd","Y","10% Discount on IPD bills including Room Rent (excluding cost of medicines, Medical Consumables, Outsourced services like Nuclear medical tests, PET Scan, MRI, CT Scan etc.)","Credit, "+I3],
+["BEL","Bharat Electronics Ltd","Y","Credit, "+I3,A_OPD],
+["BEML","Bharat Earth Movers Ltd","Y (Open)","Credit, "+I3,"NO"],
+["BHEL","Bharat Heavy Electricals Ltd","Y","Credit, "+I3,B_OPD],
+["BHUTAN","Royal Bhutanese Embassy","Y",I1+" Credit & Discount both depend on the letter.","Rs. 1,000/- per consultation in OPD (except Psychiatry and Psychology). 5% Discount on OPD Investigation/Procedures except outsourced ones."],
+["BLCL","Balmer Lawrie & Co. Ltd","Y","Credit, "+I1,C_OPD],
+["BPCL","Bharat Petroleum Corporation Ltd","Y","Credit, 10% Discount on IPD bills including Room Rent (excluding cost of medicines, Medical Consumables, Outsourced services like Nuclear medical tests, PET Scan, MRI, CT Scan etc.)","Rs. 1000 consultation fees applicable except on Psychiatry and Psychology to all BPCL beneficiaries, subject to providing identity proof."],
+["CBOI","Central Bank of India","Y","Not Credit, "+I2,A_OPD],
+["CONCOR","Container Corporation of India Ltd.","Y","Cash Basis: "+I1,B_OPD],
+["CPCL","Central Petroleum Corporation","Check With Corporate","10% Discount on IPD bills including Room Rent (excluding cost of medicines, Medical Consumables, Outsourced services like Nuclear medical tests, PET Scan, MRI, CT Scan etc.)","NO"],
+["CWC","Central Warehousing Corporation","Y","Credit with "+I3,B_OPD],
+["DFCCIL","Dedicated Freight Corridor Corporation of India Limited","Y","Cash Basis: "+I1,B_OPD],
+["DHC","Delhi High Court","Y","Credit with "+I2,"NO"],
+["DMRC","Delhi Metro Rail Corporation","Y","Credit upto 2 Lakhs with "+I3,B_OPD],
+["DU","Delhi University","Y","Not Credit, "+I3,A_OPD],
+["DZPL","Digital Zero Pvt Ltd","Y","Cash Basis: "+I1,B_OPD],
+["ECI","Election Commission of India (selected personnel)","Check With Corporate","Not Credit, "+I2,A_OPD],
+["EDCIL","Educational Consultants India Ltd","Y","Credit, "+I2,A_OPD],
+["EIL","Engineers India Ltd","Y","Cashless with "+I3,A_OPD],
+["EPIL","Engineering Projects India Ltd","Check With Corporate",I2,"NO"],
+["GAIL","Gas Authority of India Ltd","Y (Open)","Credit, "+I2,A_OPD],
+["GMRL","Gurugram Metro Rail Limited","Y","Credit, "+I1,B_OPD],
+["HINDU","Hindu Publications","Y","Not Credit, "+I1,"Only valid for Health Check Up"],
+["HMC","Hero Moto Corp","Y","Credit, "+I2,"NO"],
+["HPCL","Hindustan Petroleum Corporation Ltd","Y","Have switched to Medi-Assist TPA from now on.",A_OPD],
+["HSCC","HSCC India Ltd","Y","Credit, "+I2,A_OPD],
+["HUDCO","HUDCO","Y (Open)","Credit, "+I2,A_OPD],
+["ICSI","The Institute of Company Secretaries of India","Y","Not Credit, "+I1,"Rs. 1500/- per consultation"],
+["IFCI","Industrial Finance Corporation of India","Y","Credit, "+I2,A_OPD],
+["IFFCO","Indian Farmers Fertilizers Cooperative Ltd.","Y","Credit, "+I2,"NO"],
+["IGNOU","Indira Gandhi National Open University","Y",I2,A_OPD],
+["IOCL","Indian Oil Corporation Ltd","Y","Credit. The hospital will give 15% discount on all IPD services on their Schedule of Charges (2021-22), excluding medicines, medical consumables, anaesthesia consumables, outsourced lab facilities, CT Scan, MRI, nuclear medicines and PET scan.","IOCL beneficiaries charged Rs.1000/- for consultation by hospital consultants whose OPD fee is more than Rs.1000/-, subject to providing company ID/proof with beneficiary name. Billing officer at OPD counter must be informed prior to payment."],
+["IRCTC","Indian Railway Catering & Tourism","Y","Credit, "+I2,B_OPD],
+["IREDA","Indian Renewable Energy Development Agency","Y",I2,A_OPD],
+["IRFCL","Indian Railway Finance Corporation Limited","Pending","Credit billing only, no discount applicable","Rs. 1,000/- per consultation in OPD, 1500/- for Psychiatry and Psychology. One-time registration charge of Rs 200 for new patients. No Discount on Investigation, Procedures on OPD basis."],
+["ITI","ITI Ltd","Check With Corporate",I2,"NO"],
+["ITPO","Indian Trade Promotion Organisation","Y","Credit, "+I2,"NO"],
+["JKC","JK Cement","Y","Not Credit, 10% discount on IPD billing (for cash patients only), excluding the cost of Medicines, Medical and Non-Medical Consumables, Outsourced Diagnostic Services like Nuclear Medicine, PET Scan, MRI, CT Scan etc.",B_OPD],
+["JPC","Joint Plant Committee","Check With Corporate",I2,A_OPD],
+["KIOCL","Kudremukh Iron Ore Company","Y","Credit, "+I2,A_OPD],
+["KRIBHCO","Krishak Bharti Cooperative Ltd","Y",I2,"NO"],
+["MARUTI","Maruti Suzuki","Y","Not Credit, "+I2,A_OPD],
+["MEPL","Mangalam Equipment Pvt. Ltd.","Y","N/A","N/A"],
+["MSTC","Metal Scrap Trade Corporation","Y","Credit, "+I2,A_OPD],
+["NABARD","National Bank for Agriculture & Rural Development","Check With Corporate",I2,"NO"],
+["NALCO","National Aluminium Ltd","Y","Credit, "+I2,"NO"],
+["NBCC","National Buildings Construction Corporation","Y","Not Credit, "+I2,A_OPD],
+["NCDC","National Cooperative Development Corporation","Check With Corporate",I2,"NO"],
+["NCRTC","National Capital Region Transport Corporation","Y","1. No cashless facility — NCRTC beneficiaries availing indoor treatment at SGRH pay at the time of discharge; no authority/credit letter is issued. 2. A discount of 10% applicable on inpatient treatment.","NO"],
+["NHAI","National Highways Authority of India","Y","Cashless with "+I2,A_OPD],
+["NHPC","National Hydroelectric Power Corporation Ltd","Y","Credit, "+I2,A_OPD],
+["NHSRCL","National High Speed Rail Corp. Ltd","Y (Open)","Credit, "+I2,"NO"],
+["NIFT","National Institute of Fashion Technology","Check With Corporate",I1,C_OPD],
+["NLCL","Neyveli Lignite Corporation Ltd","Check With Corporate",I1,"NO"],
+["NPCIL","Nuclear Power Corporation of India","Y",I2,A_OPD+" OPD Investigations/Procedures can be on credit on the basis of reference or credit letter."],
+["NRL","Numaligarh Refineries","Y","Credit, "+I2,"Yes"],
+["NTPC","National Thermal Power Corporation Ltd.","Y","Credit. 1. 10% discount on all IPD services/treatment, excluding implants, medicines, medicinal consumables, anaesthesia consumables, outsourced lab facilities, CT Scan, MRI, Nuclear Medicines and PET Scan. 2. The Hospital shall directly recover 1% of the IPD bill from the patient; balance amount raised to NTPC for payment.","OPD consultation for specialist/super specialist: Rs. 1000/- per consultation."],
+["NTPC SAIL","NTPC SAIL","Y","1. 10% discount on all IPD services/treatment, excluding implants, medicines, medicinal consumables, anaesthesia consumables, outsourced lab facilities, CT Scan, MRI, Nuclear Medicines and PET Scan. 2. The Hospital shall directly recover 1% of the IPD bill from the patient.","OPD consultation for specialist/super specialist: Rs. 1000/- per consultation."],
+["OIL","Oil India Limited","Y","Credit, "+I2,A_OPD],
+["ONGC","Oil and Natural Gas Corporation","Y","Credit, "+I2,A_OPD],
+["PDIL","Projects & Development India Ltd","Y","No credit. "+I2+" (Only in case any patient comes on cash basis)",B_OPD],
+["PEC","PEC Limited","Y",I1,"No"],
+["PFCIL","Power Finance Corporation of India","Y",I2,B_OPD],
+["PGCIL","Powergrid Corporation of India Limited","Y","Credit, "+I1,B_OPD],
+["PHC","Patna High Court","Y","Cashless.","No"],
+["PLNG","Petronet LNG","Check With Corporate",I1,"NO"],
+["POSOCO","Grid Controller of India Limited","Y","Cashless with "+I2,"NO"],
+["PTCUL","Power Transmission Corporation of Uttarakhand Ltd","Y","Not Credit, "+I1,C_OPD],
+["RAILTEL","RAILTEL Corporation of India","Y","Credit, "+I1,B_OPD],
+["RBI","Reserve Bank of India","Y","Credit, "+I1,C_OPD],
+["REC","Rural Electrification Corporation","Y","Credit, "+I1,"NO"],
+["RIL","Reliance India Ltd.","Y",I3,"NO"],
+["RITES","RITES Limited","Y","Credit, "+I1,"Rs. 1,000/- per consultation in OPD, 1500/- for Psychiatry and Psychology, and ₹500/- for every half-hour session. No Discount on Investigation, Procedures on OPD basis."],
+["RVNL","Rail Vikas Nigam Limited","Y","Credit, "+I1,C_OPD],
+["SAIL","Steel Authority of India Ltd","Y","Credit, "+I1,C_OPD],
+["SC","Supreme Court of India","Y",I1,"NO"],
+["SCI","Shipping Corporation of India","Y","Credit, "+I1,C_OPD],
+["SCL","Shree Cement Ltd.","Y","Credit, "+I1+" (Not valid for TPA cases)",B_OPD],
+["SIDBI","Small Industries Development Bank of India","Check With Corporate",I1,C_OPD],
+["SJVN","Nathpa Jhakri Power Corporation Ltd","Y","Credit, "+I2,"NO"],
+["TCIL","Telecommunications Consultants India Ltd.","Y","Not Credit, "+I1,C_OPD],
+["TCL","Tata Communication Ltd","Y",I1,C_OPD],
+["THDCL","Tehri Hydro Development Corporation Ltd.","Y","Credit, "+I1,B_OPD],
+["UBI","Union Bank of India","Y","10% Discount on IPD Billing excluding medical consumables and outsourced services (text truncated in source list — verify with MOU)",C_OPD],
+["UJVN","Uttarakhand Jal Vidyut Nigam Ltd.","Y","Credit, "+I1,C_OPD],
+["UPCL","Uttarakhand Power Corporation Limited","Y","Not Credit, "+I1,C_OPD],
+["UPPCL","Uttar Pradesh Power Corporation Limited","N","Not Credit, "+I1,C_OPD],
+["WHO","World Health Organization","Y","Credit. Discount not applicable on IPD Billing excluding medical and non-medical consumables and outsourced services.","NO"]
+];
+const CO_KEY='ci_companies_v1';
+let cos={};
+
+let cases=[], ents={}, tab='domestic', editId=null, cat='company', query='', dischargeId=null;
+
+const $=id=>document.getElementById(id);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
+const iso=d=>d.toISOString().slice(0,10);
+const fmt=s=>{const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});};
+const fmtDT=ts=>new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true});
+const daysSince=s=>Math.floor((today()-new Date(s+'T00:00:00'))/86400000);
+const hrsSince=ts=>(Date.now()-new Date(ts).getTime())/3600000;
+function addDays(isoDate,n){const d=new Date(isoDate+'T00:00:00');d.setDate(d.getDate()+n);return iso(d);}
+function esc(s){return String(s||'').replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));}
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
+
+/* status model:
+   company:  pending -> approved (Open) -> [discharge => deleted]
+   cash:     open (Open)               -> [discharge => deleted]
+   intl:     pending (C-Form) -> cform-done (Open) -> [discharge => frro] -> [FRRO done => deleted]
+*/
+const pendingResp=c=>c.status==='pending'||(c.cat==='international'&&c.status==='frro');
+const openStat=c=>['approved','open','cform-done'].includes(c.status);
+
+function load(){
+  try{cases=JSON.parse(localStorage.getItem(CASES_KEY)||'null')||[];}catch(e){cases=[];}
+  if(!cases.length){
+    try{const old=JSON.parse(localStorage.getItem(OLD_KEY)||'null');
+      if(old&&old.length){cases=old.map(c=>Object.assign({cat:'company',regId:'',notified:[]},c));}
+    }catch(e){}
+  }
+  // migrate older statuses
+  cases=cases.filter(c=>!['discharged','done','rejected'].includes(c.status));
+  cases.forEach(c=>{
+    if(c.status==='C-Form filled')c.status='cform-done';
+    if(c.cat==='cash'&&c.status==='pending')c.status='open';
+    if(c.status==='approved'&&!c.apprDays&&!c.validTill)c.validTill=null;
+  });
+  saveCases();
+  try{ents=JSON.parse(localStorage.getItem(ENT_KEY)||'null')||null;}catch(e){ents=null;}
+  if(!ents){ents=Object.assign({},ENT_SEED);saveEnts();}
+  try{cos=JSON.parse(localStorage.getItem(CO_KEY)||'null')||null;}catch(e){cos=null;}
+  if(!cos){cos={};CO_SEED.forEach(r=>cos[r[0]]={name:r[1],emp:r[2],ipd:r[3],opd:r[4]});saveCos();}
+  render(); checkNotify();
+}
+function saveCases(){try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){toast('Save failed');}}
+function saveEnts(){try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){toast('Save failed');}}
+function saveCos(){try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){toast('Save failed');}}
+
+/* ---------- state ---------- */
+function state(c){
+  if(c.cat==='international'&&c.status==='pending'){
+    const h=hrsSince(c.admitTs);
+    if(h>=WINDOW_H) return 'late';
+    if(h>=WINDOW_H-6) return 'warn';
+    return 'ok';
+  }
+  if(c.cat==='international'&&c.status==='frro'){
+    const h=hrsSince(c.dischargeTs);
+    if(h>=WINDOW_H) return 'late';
+    if(h>=WINDOW_H-6) return 'warn';
+    return 'ok';
+  }
+  if(c.cat==='company'&&c.status==='pending'){
+    if(!c.days) return 'ok';
+    const el=daysSince(c.sent);
+    if(el>c.days){
+      if(c.snooze && today()<new Date(c.snooze+'T00:00:00')) return 'chased';
+      return 'late';
+    }
+    if(el>=c.days-1) return 'warn';
+    return 'ok';
+  }
+  if(c.cat==='company'&&c.status==='approved'){
+    if(!c.validTill) return 'ok';
+    const over=daysSince(c.validTill);
+    if(over>0) return 'late';
+    if(over>=-1) return 'warn';
+    return 'ok';
+  }
+  return 'ok';
+}
+
+/* ---------- render ---------- */
+function render(){
+  let pool;
+  if(tab==='domestic') pool=cases.filter(c=>c.cat!=='international'&&c.status==='pending');
+  else if(tab==='international') pool=cases.filter(c=>c.cat==='international'&&pendingResp(c));
+  else pool=cases.filter(openStat);
+
+  const late=pool.filter(c=>state(c)==='late').length;
+  $('cLate').textContent=late;
+  $('cPend').textContent=Math.max(pool.length-late,0);
+  $('cOpen').textContent=cases.filter(openStat).length;
+
+  let show=pool;
+  if(query){
+    const q=query.toLowerCase();
+    show=show.filter(c=>[c.name,c.co,c.emp,c.regId,c.dr,c.ward,c.country,c.notes,c.phone].map(x=>x||'').join(' ').toLowerCase().includes(q));
+  }
+  const rank={late:0,warn:1,chased:2,ok:3};
+  show=show.slice().sort((a,b)=>rank[state(a)]-rank[state(b)]);
+
+  const L=$('list'); L.innerHTML='';
+  if(!show.length){
+    L.innerHTML='<div class="empty">'+(query?'No cases match your search.'
+      :tab==='international'?'No international action pending — no C-Form or FRRO entries due.'
+      :tab==='open'?'No admitted patients right now. Approved company, cash, and C-Form-done international patients appear here until discharge.'
+      :'No approvals awaited. Tap <b>+ New case</b> to add a company patient.')+'</div>';
+  }
+  show.forEach(c=>L.appendChild(makeCard(c)));
+
+  $('note').textContent = late
+    ? '⚠ '+late+' case'+(late===1?'':'s')+' in this tab need'+(late===1?'s':'')+' action now.'
+    : 'Open the app each morning — urgent cases rise to the top automatically.';
+}
+
+function hourChip(ts,label,st){
+  const h=hrsSince(ts), left=WINDOW_H-h;
+  if(left>0){
+    const hh=Math.floor(left), mm=Math.round((left-hh)*60);
+    return `<div class="dchip d-${st==='warn'?'warn':st==='late'?'late':'ok'}"><b>${hh}h ${mm}m</b><span>${label} left</span></div>`;
+  }
+  return `<div class="dchip d-late"><b>${Math.floor(-left)}h over</b><span>${label} due</span></div>`;
+}
+
+function makeCard(c){
+  const st=state(c);
+  let chip='', sub='', pills='', actions='';
+  const catPill=`<span class="pill cat">${c.cat==='company'?'Company':c.cat==='international'?'International':'Cash'}</span>`;
+
+  if(c.cat==='international'&&c.status==='pending'){
+    chip=hourChip(c.admitTs,'C-Form',st);
+    if(st==='late') pills+=`<span class="pill alert">C-FORM OVERDUE</span>`;
+  }
+  else if(c.cat==='international'&&c.status==='frro'){
+    chip=hourChip(c.dischargeTs,'FRRO',st);
+    if(st==='late') pills+=`<span class="pill alert">FRRO OVERDUE</span>`;
+    pills+=`<span class="pill">Discharged ${esc(fmtDT(c.dischargeTs))}</span>`;
+  }
+  else if(c.cat==='international'&&c.status==='cform-done'){
+    chip=`<div class="dchip d-ok"><b>✓</b><span>admitted</span></div>`;
+    pills+=`<span class="pill">C-Form filled</span>`;
+  }
+  else if(c.cat==='company'&&c.status==='approved'){
+    if(c.validTill){
+      const leftD=-daysSince(c.validTill);
+      if(leftD>0){
+        chip=`<div class="dchip d-${leftD<=1?'warn':'ok'}"><b>${leftD}d</b><span>approval left</span></div>`;
+        pills+=`<span class="pill">Approved till ${fmt(c.validTill)}</span>`;
+      }else{
+        chip=`<div class="dchip d-late"><b>${-leftD}d over</b><span>extension due</span></div>`;
+        pills+=`<span class="pill alert">EXTENSION DUE — approval ended ${fmt(c.validTill)}</span>`;
+      }
+    }else{
+      chip=`<div class="dchip d-ok"><b>✓</b><span>approved</span></div>`;
+      pills+=`<span class="pill chased">Set approval days via Edit</span>`;
+    }
+  }
+  else if(c.cat==='company'&&c.status==='pending'){
+    if(c.days){
+      const el=daysSince(c.sent);
+      chip=`<div class="dchip d-${st==='late'?'late':(st==='warn'||st==='chased')?'warn':'ok'}"><b>D+${el}</b><span>of ${c.days} days</span></div>`;
+      if(st==='late') pills+=`<span class="pill alert">FOLLOW UP — ${el-c.days}d over</span>`;
+      if(st==='chased') pills+=`<span class="pill chased">Chased — re-flags ${fmt(c.snooze)}</span>`;
+    }else chip=`<div class="dchip d-ok"><b>—</b><span>no timer</span></div>`;
+  }
+  else{ // cash open
+    chip=`<div class="dchip d-ok"><b>✓</b><span>admitted</span></div>`;
+  }
+
+  if(c.cat==='company') sub=esc(c.co||'');
+  else if(c.cat==='international') sub=esc([c.country,c.ward].filter(Boolean).join(' · '));
+  else sub='Cash patient';
+
+  if(c.cat==='company'){
+    if(c.emp) pills+=`<span class="pill">Emp ${esc(c.emp)}</span>`;
+    if(c.regId) pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
+  } else if(c.regId) pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
+  if(c.dr) pills+=`<span class="pill">${esc(c.dr)}</span>`;
+  if(c.cat==='international') pills+=`<span class="pill">Admitted ${esc(fmtDT(c.admitTs))}</span>`;
+  else if(c.sent) pills+=`<span class="pill">Admitted ${fmt(c.sent)}</span>`;
+
+  const contact=c.phone?`<div class="contact"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:'';
+  const fus=(c.fu||[]);
+  const fuTxt=fus.length?`<div class="fulog">Followed up: ${fus.map(fmt).join(', ')}</div>`:'';
+
+  if(c.cat==='company'&&c.status==='pending'){
+    actions=`<div class="acts">
+        <button class="btn pri" onclick="approvalEmail('${c.id}')">✉ Approval email</button>
+        <button class="btn" onclick="chaseEmail('${c.id}')">✉ Follow-up</button>
+      </div>
+      <div class="acts">
+        <button class="btn" onclick="logFU('${c.id}')">Logged follow-up</button>
+        <button class="btn grn" onclick="approveCase('${c.id}')">Approved</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }else if(c.cat==='company'&&c.status==='approved'){
+    actions=`<div class="acts">
+        <button class="btn pri" onclick="extensionEmail('${c.id}')">✉ Extension email</button>
+        <button class="btn grn" onclick="extendCase('${c.id}')">Extension approved</button>
+      </div>
+      <div class="acts">
+        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }else if(c.cat==='international'&&c.status==='pending'){
+    actions=`<div class="acts">
+        <button class="btn grn" onclick="cformDone('${c.id}')">✓ C-Form filled</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }else if(c.cat==='international'&&c.status==='cform-done'){
+    actions=`<div class="acts">
+        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }else if(c.cat==='international'&&c.status==='frro'){
+    actions=`<div class="acts">
+        <button class="btn grn" onclick="frroDone('${c.id}')">✓ Entered on FRRO portal</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }else{ // cash open
+    actions=`<div class="acts">
+        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
+        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+      </div>`;
+  }
+
+  const d=document.createElement('div');
+  d.className='card'+(st==='late'?' flag':'');
+  d.innerHTML=`
+    <div class="row1">
+      <div class="who"><div class="nm">${esc(c.name)}</div><div class="co">${sub}</div></div>
+      ${chip}
+    </div>
+    <div class="meta">${catPill}${pills}</div>
+    ${contact}
+    ${c.notes?`<div class="fulog">${esc(c.notes)}</div>`:''}
+    ${fuTxt}
+    ${actions}`;
+  return d;
+}
+
+/* ---------- case actions ---------- */
+window.logFU=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  c.fu=c.fu||[]; c.fu.push(iso(today()));
+  const s=today(); s.setDate(s.getDate()+SNOOZE_DAYS); c.snooze=iso(s);
+  saveCases(); render();
+  toast('Logged — re-flags on '+fmt(c.snooze)+' if still pending');
+};
+window.approveCase=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  c.status='approved';
+  c.validTill = addDays(c.sent, c.apprDays||7);
+  saveCases(); render();
+  toast('Approved — moved to Open, valid till '+fmt(c.validTill));
+};
+window.extendCase=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  c.validTill = addDays(c.validTill || iso(today()), c.apprDays||7);
+  saveCases(); render();
+  toast('Extension approved — valid till '+fmt(c.validTill));
+};
+window.cformDone=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  c.status='cform-done'; saveCases(); render();
+  toast('C-Form filled — patient moved to Open');
+};
+window.frroDone=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  if(!confirm('FRRO entry done for '+c.name+'? The case will be removed.'))return;
+  cases=cases.filter(x=>x.id!==id); saveCases(); render();
+  toast('FRRO done — case closed and removed');
+};
+
+/* discharge */
+window.dischargeFor=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  dischargeId=id;
+  $('dWho').textContent=c.name+(c.co?' · '+c.co:'')+(c.cat==='international'?' · International':'');
+  $('dNote').textContent = c.cat==='international'
+    ? 'After discharge, a 24-hour FRRO portal clock will start for this patient.'
+    : 'On discharge, this case will be closed and removed from the tracker.';
+  $('dDt').value=iso(today());
+  $('dTm').value=new Date().toTimeString().slice(0,5);
+  $('dsheet').classList.add('open');$('sheetbg').classList.add('open');
+};
+window.closeDsheet=()=>{$('dsheet').classList.remove('open');if(!$('sheet').classList.contains('open'))$('sheetbg').classList.remove('open');dischargeId=null;};
+window.saveDischarge=()=>{
+  const c=cases.find(x=>x.id===dischargeId); if(!c){closeDsheet();return;}
+  const dt=$('dDt').value, tm=$('dTm').value;
+  if(!dt||!tm){toast('Enter discharge date and time');return;}
+  if(c.cat==='international'){
+    c.status='frro';
+    c.dischargeTs=new Date(dt+'T'+tm).toISOString();
+    c.notifiedF=[];
+    saveCases(); closeDsheet();
+    tab='international';
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+    render(); checkNotify();
+    toast('Discharged — FRRO 24h clock started');
+  }else{
+    cases=cases.filter(x=>x.id!==dischargeId);
+    saveCases(); closeDsheet(); render();
+    toast('Discharged — case closed and removed');
+  }
+};
+
+window.delCase=id=>{
+  if(!confirm('Delete this case permanently?'))return;
+  cases=cases.filter(x=>x.id!==id); saveCases(); render(); toast('Deleted');
+};
+
+/* ---------- emails ---------- */
+function drName(s){s=(s||'').trim();return /^dr\.?\s/i.test(s)?s.replace(/^dr\.?\s*/i,'Dr. '):('Dr. '+s);}
+window.approvalEmail=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  const subject=`REQUEST FOR APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
+  const body=
+`Dear Sir/Madam,
+
+I hope this message finds you well.
+
+This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)} under the care of ${drName(c.dr)}.
+
+All relevant documents pertaining to this admission have been attached to this email for your reference.
+
+We kindly request your approval for the same at the earliest to ensure continuity of care.
+
+Should you require any additional documents or further information, please do not hesitate to contact us at ${DESK_PHONES}. We will be happy to assist at the earliest.
+
+Thank you for your attention to this matter.
+
+Warm regards,`;
+  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+};
+window.chaseEmail=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  const el=daysSince(c.sent);
+  const over=(c.days&&el>c.days)?` It has now been ${el} days since admission, ${el-c.days} day${el-c.days===1?'':'s'} past the expected timeline.`:'';
+  const subject=`Follow-up: Approval pending | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
+  const body=
+`Dear Sir/Madam,
+
+This is a follow-up regarding the below case, for which approval is still awaited.${over}
+
+Patient Name: ${c.name}
+Emp ID: ${c.emp||'-'}
+Patient ID: ${c.regId||'-'}
+Company: ${c.co||'-'}
+Treating Doctor: ${drName(c.dr)}
+Date of Admission: ${fmt(c.sent)}
+
+Kindly expedite the approval and share the status at the earliest.
+
+Should you require any additional documents or further information, please contact us at ${DESK_PHONES}.
+
+Warm regards,`;
+  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+};
+window.extensionEmail=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  const subject=`REQUEST FOR EXTENSION OF APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
+  const body=
+`Dear Sir/Madam,
+
+I hope this message finds you well.
+
+This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)} under the care of ${drName(c.dr)}.
+
+The last approval is valid till ${c.validTill?fmt(c.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
+
+The revised estimate containing the additional amount required along with the additional number of hospitalisation days required has been attached.
+
+The IPD Slip and the running bill have been attached to this email for your reference.
+
+We kindly request your approval for the extension at the earliest to ensure continuity of care.
+
+Should you require any additional documents or further information, please do not hesitate to contact us at ${DESK_PHONES}. We will be happy to assist at the earliest.
+
+Thank you for your attention to this matter.
+
+Warm regards,`;
+  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+};
+
+/* ---------- 24h notifications (C-Form + FRRO, while app is open) ---------- */
+function notifyFor(c, ts, listKey, label){
+  const h=hrsSince(ts);
+  const t=Math.floor(h/6)*6;
+  c[listKey]=c[listKey]||[];
+  if(t>=6 && !c[listKey].includes(t)){
+    c[listKey].push(t); saveCases();
+    const left=WINDOW_H-h;
+    const msg=left>0
+      ? `${label} pending for ${c.name} — ${Math.floor(left)}h left of 24h window`
+      : `${label} OVERDUE for ${c.name} — ${Math.floor(-left)}h past the 24h deadline`;
+    if('Notification' in window && Notification.permission==='granted'){
+      try{ new Notification('C&I Tracker',{body:msg,icon:'icon-192.png'}); }catch(e){ toast(msg); }
+    } else toast(msg);
+  }
+}
+function checkNotify(){
+  const need=cases.some(c=>c.cat==='international'&&(c.status==='pending'||c.status==='frro'));
+  if(!need) return;
+  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+  cases.forEach(c=>{
+    if(c.cat!=='international') return;
+    if(c.status==='pending') notifyFor(c, c.admitTs, 'notified', 'C-Form');
+    if(c.status==='frro') notifyFor(c, c.dischargeTs, 'notifiedF', 'FRRO entry');
+  });
+}
+setInterval(()=>{checkNotify(); if(tab==='international') render();}, 60000);
+
+/* ---------- form ---------- */
+function setCat(k){
+  cat=k;
+  document.querySelectorAll('#catSeg button').forEach(b=>b.classList.toggle('on',b.dataset.cat===k));
+  $('grpCompany').style.display = k==='company'?'block':'none';
+  $('grpIntl').style.display = k==='international'?'block':'none';
+  $('grpCash').style.display = k==='cash'?'block':'none';
+  $('grpDom2').style.display = k==='international'?'none':'block';
+}
+document.querySelectorAll('#catSeg button').forEach(b=>b.onclick=()=>setCat(b.dataset.cat));
+
+function companyNames(){return Object.keys(ents).sort();}
+function masterCompanies(){
+  const m={};
+  Object.keys(cos).forEach(a=>m[a]=a+(cos[a].name?' — '+cos[a].name:''));
+  Object.keys(ents).forEach(k=>{if(!m[k])m[k]=k;});
+  return m;
+}
+function renderCoList(filter){
+  const box=$('coList'); const f=(filter||'').toLowerCase();
+  const m=masterCompanies();
+  const matches=Object.keys(m).sort().filter(a=>m[a].toLowerCase().includes(f));
+  let h=matches.map(a=>`<div class="coopt" data-co="${esc(a)}">${esc(m[a])}</div>`).join('');
+  if(filter && !matches.some(a=>a.toLowerCase()===f))
+    h+=`<div class="coopt addnew" data-add="${esc(filter)}">➕ Add "${esc(filter)}" as new company</div>`;
+  box.innerHTML=h||'<div class="coopt" style="color:var(--muted)">No companies yet — type a name to add</div>';
+  box.classList.add('open');
+  box.querySelectorAll('.coopt').forEach(o=>{
+    o.onclick=()=>{
+      if(o.dataset.add!==undefined){
+        const nn=o.dataset.add.trim().toUpperCase();
+        const dup=Object.keys(cos).concat(Object.keys(ents)).find(k=>k.toLowerCase()===nn.toLowerCase());
+        if(dup){ $('fCoSel').value=dup; }
+        else if(nn){ cos[nn]={name:'',emp:'Y',ipd:'',opd:''}; saveCos(); $('fCoSel').value=nn; toast(nn+' added — fill its details in Companies & offers'); }
+      } else $('fCoSel').value=o.dataset.co;
+      box.classList.remove('open');
+    };
+  });
+}
+$('fCoSel').addEventListener('input',e=>renderCoList(e.target.value));
+$('fCoSel').addEventListener('focus',e=>renderCoList(e.target.value));
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.codrop')) $('coList').classList.remove('open');
+});
+
+function openSheet(){
+  editId=null; setCat('company');
+  $('sheetTitle').textContent='New case';
+  $('btnSave').textContent='Save case';
+  ['fNm','fEmp','fReg','fCoSel','fRegI','fWard','fCty','fRegC','fPh','fDr','fEm','fNo','fAd'].forEach(i=>$(i).value='');
+  $('fDt').value=iso(today()); $('fDy').value=1;
+  $('fDtI').value=iso(today());
+  $('fTmI').value=new Date().toTimeString().slice(0,5);
+  $('sheet').classList.add('open');$('sheetbg').classList.add('open');
+}
+function closeSheet(){$('sheet').classList.remove('open');if(!$('dsheet').classList.contains('open'))$('sheetbg').classList.remove('open');$('coList').classList.remove('open');}
+
+window.editCase=id=>{
+  const c=cases.find(x=>x.id===id); if(!c)return;
+  editId=id; setCat(c.cat||'company');
+  $('sheetTitle').textContent='Edit case';
+  $('btnSave').textContent='Save changes';
+  $('fNm').value=c.name||''; $('fPh').value=c.phone||''; $('fDr').value=c.dr||''; $('fNo').value=c.notes||'';
+  $('fEmp').value=c.emp||''; $('fReg').value=(c.cat==='company')?(c.regId||''):''; $('fCoSel').value=c.co||'';
+  $('fRegI').value=(c.cat==='international')?(c.regId||''):''; $('fWard').value=c.ward||''; $('fCty').value=c.country||'';
+  $('fRegC').value=(c.cat==='cash')?(c.regId||''):'';
+  $('fDt').value=c.sent||iso(today()); $('fDy').value=c.days||''; $('fAd').value=c.apprDays||''; $('fEm').value=c.email||'';
+  if(c.admitTs){const d=new Date(c.admitTs);$('fDtI').value=iso(d);$('fTmI').value=d.toTimeString().slice(0,5);}
+  $('sheet').classList.add('open');$('sheetbg').classList.add('open');
+};
+
+$('fabAdd').onclick=openSheet;
+$('btnCancel').onclick=closeSheet;
+$('sheetbg').onclick=()=>{closeSheet(); closeDsheet();};
+
+$('btnSave').onclick=()=>{
+  const nm=$('fNm').value.trim(), dr=$('fDr').value.trim();
+  if(!nm){toast('Enter patient name');return;}
+  if(!dr){toast('Enter treating doctor');return;}
+  let f={name:nm,dr:dr,phone:$('fPh').value.trim(),notes:$('fNo').value.trim(),cat:cat};
+  let newStatus='pending';
+
+  if(cat==='company'){
+    const emp=$('fEmp').value.trim(), reg=$('fReg').value.trim(), co=$('fCoSel').value.trim();
+    if(!emp){toast('Enter Emp ID');return;}
+    if(!reg){toast('Enter Reg ID');return;}
+    if(!co){toast('Select the company');return;}
+    if(!Object.keys(cos).concat(Object.keys(ents)).some(k=>k.toLowerCase()===co.toLowerCase())){toast('Pick the company from the dropdown (or add it)');return;}
+    const dt=$('fDt').value, dy=parseInt($('fDy').value,10)||null;
+    const ad=parseInt($('fAd').value,10)||null;
+    if(!dt){toast('Enter date of admission');return;}
+    Object.assign(f,{emp:emp,regId:reg,co:co,sent:dt,days:dy,apprDays:ad,email:$('fEm').value.trim()});
+  }
+  else if(cat==='international'){
+    const reg=$('fRegI').value.trim(), ward=$('fWard').value.trim(), dt=$('fDtI').value, tm=$('fTmI').value;
+    if(!reg){toast('Enter Reg No');return;}
+    if(!ward){toast('Enter where the patient is admitted');return;}
+    if(!dt||!tm){toast('Enter admission date and time');return;}
+    Object.assign(f,{regId:reg,ward:ward,country:$('fCty').value.trim(),admitTs:new Date(dt+'T'+tm).toISOString()});
+  }
+  else{
+    const dt=$('fDt').value;
+    if(!dt){toast('Enter date of admission');return;}
+    Object.assign(f,{regId:$('fRegC').value.trim(),sent:dt});
+    newStatus='open';
+  }
+
+  if(editId){
+    const c=cases.find(x=>x.id===editId);
+    if(c){
+      const wasApproved=(c.status==='approved');
+      Object.assign(c,f);
+      if(wasApproved&&c.cat==='company'&&c.apprDays&&!c.validTill) c.validTill=addDays(c.sent,c.apprDays);
+      if(wasApproved&&c.cat==='company'&&c.apprDays&&c.validTill&&daysSince(c.sent)>=0&&new Date(c.validTill)<new Date(c.sent)) c.validTill=addDays(c.sent,c.apprDays);
+    }
+    toast('Case updated');
+  }else{
+    cases.push(Object.assign({id:uid(),status:newStatus,fu:[],snooze:null,notified:[],notifiedF:[]},f));
+    toast(cat==='international'?'Saved — C-Form 24h clock started':cat==='cash'?'Saved to Open':'Case saved');
+  }
+  editId=null; saveCases(); closeSheet();
+  tab = (f.cat==='international')?'international':(f.cat==='cash')?'open':'domestic';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
+  render(); checkNotify();
+};
+
+/* ---------- entitlements ---------- */
+window.openEnts=()=>{ $('entPanel').classList.add('open'); renderEnts(); };
+window.closeEnts=()=>{ $('entPanel').classList.remove('open'); };
+$('entSrch').oninput=()=>renderEnts();
+
+function renderEnts(){
+  const q=($('entSrch').value||'').toLowerCase();
+  const L=$('entList'); L.innerHTML='';
+  companyNames().filter(n=>n.toLowerCase().includes(q)).forEach(n=>{
+    const d=document.createElement('div'); d.className='ecard';
+    d.innerHTML=`<div class="ehead">${esc(n)}<span>▾</span></div>
+      <div class="ebody">
+        <div class="lines">${esc(ents[n]||'No entitlement details yet.')}</div>
+        <div class="eacts">
+          <button class="btn" onclick="editEnt('${esc(n)}',this)">Edit</button>
+        </div>
+      </div>`;
+    d.querySelector('.ehead').onclick=()=>d.classList.toggle('open');
+    L.appendChild(d);
+  });
+  if(!L.children.length) L.innerHTML='<div class="empty">No company found. Use + Add company.</div>';
+}
+window.editEnt=(name,btn)=>{
+  const body=btn.closest('.ebody');
+  body.innerHTML=`<textarea id="entTa">${esc(ents[name]||'')}</textarea>
+    <div class="eacts">
+      <button class="btn pri" onclick="saveEnt('${esc(name)}')">Save</button>
+      <button class="btn" onclick="renderEnts()">Cancel</button>
+      <button class="btn del" onclick="delEnt('${esc(name)}')">✕ Delete</button>
+    </div>`;
+};
+window.saveEnt=name=>{
+  ents[name]=$('entTa').value.trim(); saveEnts(); renderEnts(); toast('Entitlement updated');
+};
+window.delEnt=name=>{
+  if(!confirm('Remove '+name+' and its entitlement?'))return;
+  delete ents[name]; saveEnts(); renderEnts();
+};
+window.addCompany=()=>{
+  const n=prompt('Company name:'); if(!n)return;
+  const key=n.trim().toUpperCase(); if(!key)return;
+  if(Object.keys(ents).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists');return;}
+  ents[key]=''; saveEnts(); renderEnts();
+  toast(key+' added — tap it to enter the entitlement');
+};
+
+
+/* ---------- reference menu + companies panel ---------- */
+window.openMenu=()=>{ $('menuSheet').classList.add('open'); $('sheetbg').classList.add('open'); };
+window.closeMenu=()=>{ $('menuSheet').classList.remove('open'); if(!$('sheet').classList.contains('open')&&!$('dsheet').classList.contains('open'))$('sheetbg').classList.remove('open'); };
+window.openCos=()=>{ $('coPanel').classList.add('open'); renderCos(); };
+window.closeCos=()=>{ $('coPanel').classList.remove('open'); };
+$('coSrchP').oninput=()=>renderCos();
+
+function renderCos(){
+  const q=($('coSrchP').value||'').toLowerCase();
+  const L=$('coListP'); L.innerHTML='';
+  Object.keys(cos).sort().filter(a=>(a+' '+(cos[a].name||'')).toLowerCase().includes(q)).forEach(a=>{
+    const c=cos[a];
+    const d=document.createElement('div'); d.className='ecard';
+    d.innerHTML=`<div class="ehead">${esc(a)}<span style="font-weight:600;color:var(--muted);font-size:12px;">${esc(c.emp||'')}</span></div>
+      <div class="ebody">
+        <div class="lines"><b>${esc(c.name||'')}</b>\nEmpanelled: ${esc(c.emp||'-')}\n\nIPD: ${esc(c.ipd||'-')}\n\nOPD: ${esc(c.opd||'-')}</div>
+        <div class="eacts"><button class="btn" onclick="editCo('${esc(a)}',this)">Edit</button></div>
+      </div>`;
+    d.querySelector('.ehead').onclick=()=>d.classList.toggle('open');
+    L.appendChild(d);
+  });
+  if(!L.children.length) L.innerHTML='<div class="empty">No company found. Use + Add.</div>';
+}
+window.editCo=(acr,btn)=>{
+  const c=cos[acr]||{};
+  const body=btn.closest('.ebody');
+  body.innerHTML=`
+    <div class="fld" style="margin-top:8px;"><label>Full name</label><input id="coNm" value="${esc(c.name||'')}"></div>
+    <div class="fld"><label>Empanelled (Y / N / Check)</label><input id="coEm" value="${esc(c.emp||'')}"></div>
+    <div class="fld"><label>What we offer — IPD</label><textarea id="coIp">${esc(c.ipd||'')}</textarea></div>
+    <div class="fld"><label>What we offer — OPD</label><textarea id="coOp">${esc(c.opd||'')}</textarea></div>
+    <div class="eacts">
+      <button class="btn pri" onclick="saveCo('${esc(acr)}')">Save</button>
+      <button class="btn" onclick="renderCos()">Cancel</button>
+      <button class="btn del" onclick="delCo('${esc(acr)}')">✕ Delete</button>
+    </div>`;
+};
+window.saveCo=acr=>{
+  cos[acr]={name:$('coNm').value.trim(),emp:$('coEm').value.trim(),ipd:$('coIp').value.trim(),opd:$('coOp').value.trim()};
+  saveCos(); renderCos(); toast(acr+' updated');
+};
+window.delCo=acr=>{
+  if(!confirm('Remove '+acr+' from the list?'))return;
+  delete cos[acr]; saveCos(); renderCos();
+};
+window.addCo=()=>{
+  const n=prompt('Company acronym (e.g. NTPC):'); if(!n)return;
+  const key=n.trim().toUpperCase(); if(!key)return;
+  if(Object.keys(cos).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists');return;}
+  cos[key]={name:'',emp:'Y',ipd:'',opd:''}; saveCos(); renderCos();
+  toast(key+' added — tap it and Edit to fill details');
+};
+
+/* ---------- misc ---------- */
+$('srch').oninput=e=>{query=e.target.value.trim(); render();};
+document.querySelectorAll('.tab').forEach(t=>{
+  t.onclick=()=>{tab=t.dataset.tab;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+    render();};
+});
+
+load();
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(function(){}); }
+</script>
+</body>
+</html>
