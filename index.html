@@ -387,7 +387,7 @@ let cases=[], ents={}, tab='domestic', editId=null, cat='company', query='', dis
 const $=id=>document.getElementById(id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
-const iso=d=>d.toISOString().slice(0,10);
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const fmt=s=>{const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});};
 const fmtDT=ts=>new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true});
 const daysSince=s=>Math.floor((today()-new Date(s+'T00:00:00'))/86400000);
