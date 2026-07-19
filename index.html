@@ -374,6 +374,11 @@ a{-webkit-tap-highlight-color:transparent}
 .acct-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 0 3px var(--accent-soft)}
 .acct-email{font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct .btn{min-height:44px}
+.sync{font-size:12px;font-weight:600;padding:9px 11px;border-radius:var(--r-sm);margin-bottom:10px;line-height:1.4}
+.sync.ok{color:var(--accent);background:var(--accent-soft)}
+.sync.warn{color:var(--warn);background:var(--warn-soft)}
+.sync.danger{color:var(--danger);background:var(--danger-soft)}
+.sync.muted{color:var(--muted);background:var(--surface-2)}
 </style>
 </head>
 <body>
@@ -510,6 +515,7 @@ a{-webkit-tap-highlight-color:transparent}
     <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
   </button>
   <div class="acct" id="acctBox" hidden>
+    <div class="sync muted" id="syncStatus">Connecting…</div>
     <div class="acct-row"><span class="acct-dot"></span><span class="acct-email" id="acctEmail"></span></div>
     <button class="btn" id="btnSignOut">Sign out</button>
   </div>
@@ -828,12 +834,28 @@ function fbInit(){
   }catch(e){return false;}
 }
 
+/* visible sync status (shown in the Desk-reference menu) */
+function setSync(kind,text){
+  const el=$('syncStatus'); if(!el)return;
+  el.className='sync '+kind; el.textContent=text;
+}
+function syncErrText(e){
+  const c=(e&&e.code)||'';
+  if(c==='permission-denied')return 'Sync blocked — Firestore rules deny access. Check the rules include your login email.';
+  if(c==='unavailable')return 'Can’t reach the server — check your internet.';
+  if(c==='failed-precondition'||c==='not-found')return 'Database not found — create the Firestore database in Firebase.';
+  return 'Sync error: '+(c||(e&&e.message)||'unknown');
+}
+
 /* push the whole workspace (debounced; JSON-clean drops undefined for Firestore) */
 function queuePush(){
   if(!docRef||!auth||!auth.currentUser)return;
   clearTimeout(pushTimer);
   pushTimer=setTimeout(()=>{
-    try{docRef.set(JSON.parse(JSON.stringify({cases,ents,cos})));}catch(e){}
+    try{
+      docRef.set(JSON.parse(JSON.stringify({cases,ents,cos})))
+        .catch(e=>{ setSync('danger',syncErrText(e)); if(e&&e.code==='permission-denied')toast('Sync blocked — check Firestore rules','danger'); });
+    }catch(e){}
   },400);
 }
 
@@ -868,15 +890,24 @@ async function bootstrapCloud(){
       t.set(docRef,JSON.parse(JSON.stringify(out)));
     });
     localStorage.setItem(FLAG,'1');
-  }catch(e){/* offline — retries next online session (flag stays unset) */}
+  }catch(e){
+    // leave FLAG unset so this retries next session; surface real (non-offline) errors
+    if(e&&e.code&&e.code!=='unavailable')setSync('danger',syncErrText(e));
+  }
 }
 
 function startCloud(){
   if(cloudOn)return; cloudOn=true;
+  setSync('muted','Connecting…');
   bootstrapCloud();
   cloudUnsub=docRef.onSnapshot(
-    snap=>{ if(snap.exists)applyCloud(snap.data()||{}); },
-    err=>{/* transient offline / permission errors — local mirror stays */}
+    {includeMetadataChanges:true},
+    snap=>{
+      if(snap.exists)applyCloud(snap.data()||{});
+      if(snap.metadata.fromCache) setSync('warn','Offline — changes will sync when you reconnect');
+      else setSync('ok','Synced across your devices');
+    },
+    err=>{ setSync('danger',syncErrText(err)); if(err&&err.code==='permission-denied')toast('Sync blocked — check Firestore rules','danger'); }
   );
 }
 function stopCloud(){
