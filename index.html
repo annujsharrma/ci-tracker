@@ -176,17 +176,22 @@ a{-webkit-tap-highlight-color:transparent}
 .btn.dangerpri:hover{background:var(--danger)}
 .btn svg{flex-shrink:0}
 
-/* FAB */
-.fab{
+/* FAB bar (two buttons) */
+.fabbar{
   position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);
-  background:linear-gradient(135deg,#1E4A3B,#16302B);color:#fff;border-radius:var(--r-full);
-  min-height:52px;padding:0 26px;font-size:15px;font-weight:700;
-  display:inline-flex;align-items:center;gap:8px;z-index:5;
+  display:flex;gap:10px;z-index:5;max-width:calc(100% - 20px);
+}
+.fab{
+  flex:0 0 auto;background:linear-gradient(135deg,#1E4A3B,#16302B);color:#fff;border-radius:var(--r-full);
+  min-height:52px;padding:0 20px;font-size:15px;font-weight:700;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
   box-shadow:0 12px 28px rgba(22,48,43,.35),0 2px 8px rgba(22,48,43,.15);
-  transition:transform var(--t-fast) var(--ease),filter var(--t-fast) ease;
+  transition:transform var(--t-fast) var(--ease),filter var(--t-fast) ease,background var(--t-fast) ease;
 }
 .fab:hover{filter:brightness(1.15)}
-.fab:active{transform:translateX(-50%) scale(.95)}
+.fab:active{transform:scale(.94)}
+.fab.secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:var(--sh-lg)}
+.fab.secondary:hover{filter:none;background:var(--surface-2)}
 
 /* empty state */
 .empty{padding:48px 24px;text-align:center;color:var(--muted);animation:fadeIn .3s ease}
@@ -424,10 +429,16 @@ a{-webkit-tap-highlight-color:transparent}
   <div class="list" id="list"></div>
   <div class="note" id="note"></div>
 
-  <button class="fab" id="fabAdd">
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    New case
-  </button>
+  <div class="fabbar">
+    <button class="fab secondary" id="fabEmail">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      Email draft
+    </button>
+    <button class="fab" id="fabAdd">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New case
+    </button>
+  </div>
 </div>
 
 <!-- shared backdrop for bottom sheets -->
@@ -486,6 +497,27 @@ a{-webkit-tap-highlight-color:transparent}
   <div class="savebar">
     <button class="btn" id="btnCancel">Cancel</button>
     <button class="btn pri" id="btnSave">Save case</button>
+  </div>
+</div>
+
+<!-- Email draft sheet -->
+<div class="sheet" id="emailSheet" role="dialog" aria-modal="true" aria-labelledby="emailTitle">
+  <h2 id="emailTitle">Email draft</h2>
+  <div class="fld">
+    <label for="emType">Email type</label>
+    <select id="emType">
+      <option value="approval">First email for approval</option>
+      <option value="extension">Extension of approval</option>
+      <option value="intimation">Intimation — foreign patient (non-medical visa)</option>
+      <option value="invitation">Medical visa invitation letter</option>
+      <option value="docsRequest">Invitation letter — documents request</option>
+    </select>
+  </div>
+  <div id="emFields"></div>
+  <div class="fld"><label for="emTo">Recipient email</label><input id="emTo" type="email" inputmode="email" placeholder="recipient@example.com" autocomplete="off"></div>
+  <div class="savebar">
+    <button class="btn" id="emCancel">Cancel</button>
+    <button class="btn pri" id="emGenerate">Generate &amp; send</button>
   </div>
 </div>
 
@@ -1450,6 +1482,217 @@ Warm regards,`;
 const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendCase,cformDone,frroDone,dischargeFor,editCase,undoApproval,undoCform,undoDischarge};
 
 /* ================================================================
+   Email draft generator (standalone — not tied to a case)
+   ================================================================ */
+const fmtFull=isoD=>{const d=new Date(isoD+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;};
+function admWord(isoD){
+  if(!isoD)return 'has been admitted to Sir Ganga Ram Hospital';
+  return daysSince(isoD)<0
+    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmt(isoD)}`
+    : `has been admitted to Sir Ganga Ram Hospital on ${fmt(isoD)}`;
+}
+const EMAIL_TYPES={
+  approval:{
+    fields:[
+      {id:'name',label:'Patient name',ph:'e.g. Ramesh Kumar'},
+      {id:'regId',label:'Patient ID',ph:'SGRH/2026/…'},
+      {id:'co',label:'Company'},
+      {id:'emp',label:'Emp ID'},
+      {id:'date',label:'Admission date',type:'date'},
+      {id:'dr',label:'Treating doctor',ph:'Dr. Mehta'}
+    ],
+    build:v=>({
+      subject:`REQUEST FOR APPROVAL | ${v.co||''} | ${v.name||''} | EMP. ID. ${v.emp||''}`,
+      body:`Dear Sir/Madam,
+
+I hope this message finds you well.
+
+This is to formally notify you that ${v.name||''} (Patient ID: ${v.regId||'-'}) ${admWord(v.date)} under the care of ${drName(v.dr)}.
+
+All relevant documents pertaining to this admission have been attached to this email for your reference.
+
+We kindly request your approval for the same at the earliest to ensure continuity of care.
+
+Should you require any additional documents or further information, please do not hesitate to contact us at ${DESK_PHONES}. We will be happy to assist at the earliest.
+
+Thank you for your attention to this matter.
+
+Warm regards,`
+    })
+  },
+  extension:{
+    fields:[
+      {id:'name',label:'Patient name'},
+      {id:'regId',label:'Patient ID'},
+      {id:'co',label:'Company'},
+      {id:'emp',label:'Emp ID'},
+      {id:'date',label:'Admission date',type:'date'},
+      {id:'dr',label:'Treating doctor'},
+      {id:'validTill',label:'Last approval valid till',type:'date'}
+    ],
+    build:v=>({
+      subject:`REQUEST FOR EXTENSION OF APPROVAL | ${v.co||''} | ${v.name||''} | EMP. ID. ${v.emp||''}`,
+      body:`Dear Sir/Madam,
+
+I hope this message finds you well.
+
+This is to formally notify you that ${v.name||''} (Patient ID: ${v.regId||'-'}) ${admWord(v.date)} under the care of ${drName(v.dr)}.
+
+The last approval is valid till ${v.validTill?fmt(v.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
+
+The revised estimate containing the additional amount required along with the additional number of hospitalisation days required has been attached.
+
+The IPD Slip and the running bill have been attached to this email for your reference.
+
+We kindly request your approval for the extension at the earliest to ensure continuity of care.
+
+Should you require any additional documents or further information, please do not hesitate to contact us at ${DESK_PHONES}. We will be happy to assist at the earliest.
+
+Thank you for your attention to this matter.
+
+Warm regards,`
+    })
+  },
+  intimation:{
+    fields:[
+      {id:'name',label:'Patient name',ph:'Mr. Hakimi Abdul Hamid'},
+      {id:'age',label:'Age',type:'number'},
+      {id:'sex',label:'Sex',type:'select',options:['Male','Female','Other']},
+      {id:'nationality',label:'Nationality',ph:'Afghanistan'},
+      {id:'passport',label:'Passport No.'},
+      {id:'visaType',label:'Visa type',ph:'Business Visa',def:'Business Visa'},
+      {id:'visaNo',label:'Visa No.'},
+      {id:'dr',label:'Treating consultant',ph:'Dr. (Prof.) Anurag Gupta'},
+      {id:'designation',label:'Designation',ph:'Senior Consultant',def:'Senior Consultant'},
+      {id:'department',label:'Department',ph:'Nephrology'},
+      {id:'diagnosis',label:'Diagnosis',ph:'nephrotic syndrome'},
+      {id:'procedure',label:'Required procedure',ph:'kidney biopsy'},
+      {id:'certDate',label:'Medical certificate date',type:'date'}
+    ],
+    build:v=>{
+      const visa=v.visaType||'Business Visa';
+      const pron=v.sex==='Female'?'her':v.sex==='Male'?'his':'their';
+      return {
+        subject:`INTIMATION OF ADMISSION OF FOREIGN NATIONAL | ${v.name||''} | ${v.nationality||''} | PASSPORT NO. ${v.passport||''}`,
+        body:`Dear Sir/Madam,
+
+This is to bring to the kind notice of your good office that ${v.name||''}, aged ${v.age||'-'} years, ${v.sex||''}, a citizen of ${v.nationality||''}, holding Passport No. ${v.passport||''} and ${visa} No. ${v.visaNo||''}, has been admitted at Sir Ganga Ram Hospital, New Delhi, under ${drName(v.dr)}, ${v.designation||'Senior Consultant'}, Department of ${v.department||''}.
+
+As per the treating consultant, the patient has been diagnosed with ${v.diagnosis||''} and requires an immediate ${v.procedure||''}. The condition warranted urgent medical intervention, and in view of the emergency nature of the patient's condition, admission was extended on medical grounds notwithstanding that the patient is presently holding a ${visa}, as any delay in treatment could have led to deterioration of the patient's health.
+
+Form C in respect of the patient has been duly submitted through the online FRRO portal as per the prescribed procedure.
+
+The patient and ${pron} attendants have been duly informed and advised to approach the competent authorities for conversion of visa status to the appropriate Medical Visa category, and that any subsequent/planned admission at the hospital will be subject to the patient holding the appropriate visa. Any decision regarding the patient's visa status, conversion, or extension rests entirely with the competent authorities.
+
+A medical certificate dated ${v.certDate?fmtFull(v.certDate):'-'} issued by the treating consultant is enclosed herewith for your kind reference and record.
+
+This email is being submitted by way of intimation. Kindly take the same on record and advise if any further information or documentation is required from the hospital's side. The hospital shall extend full cooperation as required.
+
+Thanking you,`
+      };
+    }
+  },
+  invitation:{
+    fields:[
+      {id:'name',label:'Patient name',ph:'Mr. Fraidoon Ferozy'},
+      {id:'country',label:'Country',ph:'USA'},
+      {id:'passport',label:'Passport No.',ph:'A34994080'}
+    ],
+    build:v=>({
+      subject:`MEDICAL VISA INVITATION LETTER | ${(v.name||'').toUpperCase()} | ${(v.country||'').toUpperCase()} | PASSPORT NO. ${(v.passport||'').toUpperCase()}`,
+      body:`Dear Sir/Madam,
+
+Please find attached the Medical Visa Invitation Letter and AYUSH invitation letter for ${v.name||''} (Passport No. ${v.passport||''}).
+
+Note: This invitation letter is for medical visa purposes only.
+
+Any assistance provided to him/her or his/her attendants would be highly appreciated.
+
+Thanks & regards,`
+    })
+  },
+  docsRequest:{
+    fields:[
+      {id:'name',label:'Patient name (optional — for subject)'}
+    ],
+    build:v=>({
+      subject:`DOCUMENTS REQUIRED FOR VISA INVITATION LETTER${v.name?` | ${v.name}`:''}`,
+      body:`Respected Sir/Madam,
+
+Hope this email finds you well,
+
+To process your Visa Invitation Letter, kindly send us the following documents:
+
+📄 Documents Required
+1️⃣ Valid Passport of Patient (copy)
+2️⃣ Valid Passport of Attendant (copy)
+3️⃣ Medical Documents (reports, prescriptions, discharge summaries)
+
+📋 Additional Details Needed
+4️⃣ Intended Date of Arrival:
+5️⃣ Required Doctor & Department:
+6️⃣ Current Address in Home Country:
+7️⃣ Phone Number in Home Country:
+
+⚠️ Please Note:
+* Passports must be valid and not expired
+* All document images must be clear, well-lit and fully readable
+* Ensure all four corners of the passport are visible in the scan/photo
+* Blurry or incomplete documents may delay processing
+
+Our team will revert at the earliest.
+
+Warm Regards,
+International Office
+🏥 Sir Ganga Ram Hospital`
+    })
+  }
+};
+
+function renderEmailFields(){
+  const t=EMAIL_TYPES[$('emType').value];
+  const box=$('emFields'); box.innerHTML='';
+  (t.fields||[]).forEach(f=>{
+    const wrap=document.createElement('div'); wrap.className='fld';
+    const lab=document.createElement('label'); lab.setAttribute('for','em_'+f.id); lab.textContent=f.label;
+    wrap.appendChild(lab);
+    let el;
+    if(f.type==='select'){
+      el=document.createElement('select');
+      (f.options||[]).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;el.appendChild(op);});
+    }else if(f.type==='textarea'){
+      el=document.createElement('textarea');
+    }else{
+      el=document.createElement('input');
+      el.type=f.type||'text';
+      if(f.type==='number')el.inputMode='numeric';
+      el.autocomplete='off';
+    }
+    el.id='em_'+f.id;
+    if(f.ph)el.placeholder=f.ph;
+    if(f.def)el.value=f.def;
+    wrap.appendChild(el);
+    box.appendChild(wrap);
+  });
+}
+function openEmailSheet(){
+  $('emType').value='approval';
+  renderEmailFields();
+  $('emTo').value='';
+  $('emailSheet').classList.add('open'); syncBackdrop();
+}
+function closeEmailSheet(){ $('emailSheet').classList.remove('open'); syncBackdrop(); }
+function generateEmail(){
+  const t=EMAIL_TYPES[$('emType').value];
+  const v={};
+  (t.fields||[]).forEach(f=>{ const el=$('em_'+f.id); v[f.id]=el?el.value.trim():''; });
+  const {subject,body}=t.build(v);
+  const to=$('emTo').value.trim();
+  closeEmailSheet();
+  location.href=`mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+/* ================================================================
    24h reminders (C-Form + FRRO, while app is open)
    ================================================================ */
 function notifyFor(c,ts,listKey,label){
@@ -1482,7 +1725,7 @@ function checkNotify(){
    Bottom sheets & backdrop
    ================================================================ */
 function syncBackdrop(){
-  const any=['sheet','dsheet','menuSheet'].some(id=>$(id).classList.contains('open'));
+  const any=['sheet','dsheet','menuSheet','emailSheet'].some(id=>$(id).classList.contains('open'));
   $('sheetbg').classList.toggle('open',any);
 }
 function closeSheet(){
@@ -1739,6 +1982,10 @@ function init(){
   $('btnCancel').onclick=closeSheet;
   $('btnSave').onclick=saveCase;
   $('btnRef').onclick=openMenu;
+  $('fabEmail').onclick=openEmailSheet;
+  $('emType').onchange=renderEmailFields;
+  $('emCancel').onclick=closeEmailSheet;
+  $('emGenerate').onclick=generateEmail;
   $('srch').oninput=e=>{query=e.target.value.trim();render();};
   document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.tab));
   document.querySelectorAll('#catSeg button').forEach(b=>b.onclick=()=>setCat(b.dataset.cat));
@@ -1750,7 +1997,7 @@ function init(){
   });
 
   /* backdrop closes every open sheet */
-  $('sheetbg').onclick=()=>{closeSheet();closeDsheet();closeMenu();};
+  $('sheetbg').onclick=()=>{closeSheet();closeDsheet();closeMenu();closeEmailSheet();};
 
   /* discharge sheet */
   $('dCancel').onclick=closeDsheet;
@@ -1785,7 +2032,7 @@ function init(){
     if($('dlgBox').classList.contains('open')){dlgClose(dlgHasInput?null:false);return;}
     if($('coPanel').classList.contains('open')){closeCos();return;}
     if($('entPanel').classList.contains('open')){closeEnts();return;}
-    closeSheet();closeDsheet();closeMenu();
+    closeSheet();closeDsheet();closeMenu();closeEmailSheet();
   });
 
   /* sign in / out */
