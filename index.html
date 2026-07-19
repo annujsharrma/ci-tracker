@@ -890,6 +890,7 @@ function friendlyAuthErr(e){
   if(c.includes('too-many-requests'))return 'Too many attempts — try again in a few minutes.';
   if(c.includes('user-disabled'))return 'This account has been disabled.';
   if(c.includes('network'))return 'No connection — check your internet.';
+  if(/configuration-not-found|operation-not-allowed/.test(c))return 'Sign-in isn’t set up yet — the admin must enable Email/Password in Firebase.';
   return 'Couldn’t sign in. Please try again.';
 }
 function liError(msg){
