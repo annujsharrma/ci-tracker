@@ -506,7 +506,7 @@ a{-webkit-tap-highlight-color:transparent}
   </button>
   <button class="menuitem" id="miCos">
     <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg></span>
-    Companies &amp; what we offer (IPD/OPD)
+    PSU Master sheet
     <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
   </button>
   <div class="acct" id="acctBox" hidden>
@@ -522,7 +522,7 @@ a{-webkit-tap-highlight-color:transparent}
       <button class="iconbtn" id="coBack" aria-label="Back">
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M5 12h14"/></svg>
       </button>
-      <h2>Empanelled companies</h2>
+      <h2>PSU Master sheet</h2>
       <button class="addco" id="coAdd">+ Add</button>
     </div>
     <div class="srch" style="padding:0 0 12px;">
@@ -568,7 +568,7 @@ a{-webkit-tap-highlight-color:transparent}
 </div>
 
 <!-- Login overlay -->
-<div class="login show" id="loginOverlay">
+<div class="login" id="loginOverlay">
   <div class="login-card">
     <img src="icon-192.png" alt="" class="login-logo">
     <h2>MediTrack</h2>
@@ -819,6 +819,8 @@ function fbInit(){
   try{
     firebase.initializeApp(firebaseConfig);
     auth=firebase.auth();
+    // keep the session on this device so re-login isn't needed on every open
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
     db=firebase.firestore();
     db.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // offline cache; ok if it fails
     docRef=db.collection('workspace').doc('main');
@@ -1414,7 +1416,7 @@ function renderCoList(filter){
         const nn=o.dataset.add.trim().toUpperCase();
         const dup=Object.keys(cos).concat(Object.keys(ents)).find(k=>k.toLowerCase()===nn.toLowerCase());
         if(dup){$('fCoSel').value=dup;}
-        else if(nn){cos[nn]={name:'',emp:'Y',ipd:'',opd:''};saveCos();$('fCoSel').value=nn;toast(nn+' added — fill its details in Companies & offers');}
+        else if(nn){cos[nn]={name:'',emp:'Y',ipd:'',opd:''};saveCos();$('fCoSel').value=nn;toast(nn+' added — fill its details in the PSU Master sheet');}
       }else $('fCoSel').value=o.dataset.co;
       box.classList.remove('open');
     };
