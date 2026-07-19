@@ -341,7 +341,7 @@ a{-webkit-tap-highlight-color:transparent}
 .toast .dot{width:8px;height:8px;border-radius:50%;background:#4CAF87;flex-shrink:0}
 .toast.warn .dot{background:#E2A33C}
 .toast.danger .dot{background:#E5776A}
-.toast-undo{margin-left:6px;flex-shrink:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:800;min-height:34px;transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease)}
+.toast-undo{margin-left:6px;flex-shrink:0;pointer-events:auto;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:800;min-height:34px;transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease)}
 .toast-undo:hover{background:rgba(255,255,255,.28)}
 .toast-undo:active{transform:scale(.93)}
 
@@ -392,7 +392,7 @@ a{-webkit-tap-highlight-color:transparent}
       <div class="brand">
         <img src="icon-192.png" alt="" class="brand-logo">
         <div>
-          <div class="eyebrow">C&amp;I Desk · SGRH</div>
+          <div class="eyebrow">SGRH</div>
           <h1>MediTrack</h1>
         </div>
       </div>
@@ -1076,10 +1076,12 @@ function render(){
   else if(tab==='international') pool=cases.filter(c=>c.cat==='international'&&pendingResp(c));
   else pool=cases.filter(openStat);
 
-  const late=pool.filter(c=>state(c)==='late').length;
-  $('cLate').textContent=late;
-  $('cPend').textContent=Math.max(pool.length-late,0);
+  // Global stat cards — a stable desk overview that does NOT change per tab.
+  // Action due = anything urgent; Waiting = awaiting a response (never admitted); Open = admitted.
+  $('cLate').textContent=cases.filter(c=>state(c)==='late').length;
+  $('cPend').textContent=cases.filter(c=>pendingResp(c)&&state(c)!=='late').length;
   $('cOpen').textContent=cases.filter(openStat).length;
+  const late=pool.filter(c=>state(c)==='late').length;   // for the tab-specific note below
 
   let show=pool;
   if(query){
@@ -1723,8 +1725,10 @@ async function addCo(){
 /* ================================================================
    Tabs, search, wiring, init
    ================================================================ */
+const TAB_KEY='ci_tab';
 function setTab(t){
   tab=t;
+  try{localStorage.setItem(TAB_KEY,t);}catch(e){}   // remember the tab across refreshes
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));
   render();
 }
@@ -1793,6 +1797,13 @@ function init(){
 
   /* periodic urgency refresh */
   setInterval(()=>{checkNotify();if(tab==='international')render();},60000);
+
+  /* restore the tab the user was last on (so a refresh doesn't jump back to Domestic) */
+  const savedTab=localStorage.getItem(TAB_KEY);
+  if(savedTab==='domestic'||savedTab==='international'||savedTab==='open'){
+    tab=savedTab;
+    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===tab));
+  }
 
   load();  // instant local-first paint from the localStorage mirror
 
