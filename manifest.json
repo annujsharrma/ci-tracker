@@ -1,7 +1,7 @@
 {
-  "name": "C&I Follow-up Tracker",
-  "short_name": "C&I Tracker",
-  "description": "Follow-up tracker for Corporate & International Desk, SGRH",
+  "name": "MediTrack",
+  "short_name": "MediTrack",
+  "description": "MediTrack — follow-up tracker for Corporate & International Desk, SGRH",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#F6F7F4",

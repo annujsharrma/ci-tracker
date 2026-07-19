@@ -6,8 +6,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#16302B">
-<meta name="description" content="Follow-up tracker for the Corporate & International Desk, SGRH">
-<title>C&I Follow-up Tracker</title>
+<meta name="description" content="MediTrack — follow-up tracker for the Corporate & International Desk, SGRH">
+<title>MediTrack</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -63,9 +63,22 @@ a{-webkit-tap-highlight-color:transparent}
 .app{max-width:520px;margin:0 auto;min-height:100dvh;padding-bottom:calc(124px + var(--safe-b));animation:fadeIn .3s ease}
 @keyframes fadeIn{from{opacity:0}}
 
-.hdr{display:flex;justify-content:space-between;align-items:center;padding:calc(20px + var(--safe-t)) 20px 12px}
-.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.hdr h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.hero{
+  position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#1E4437 0%,#16302B 55%,#11251F 100%);
+  border-radius:0 0 24px 24px;
+  padding:calc(20px + var(--safe-t)) 20px 52px;
+}
+.hero::after{
+  content:"";position:absolute;top:-60px;right:-60px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(255,255,255,.07),transparent 65%);
+  pointer-events:none;
+}
+.hero-top{display:flex;justify-content:space-between;align-items:center;position:relative}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-logo{width:44px;height:44px;border-radius:12px;border:1px solid rgba(255,255,255,.18);box-shadow:0 4px 12px rgba(0,0,0,.28);flex-shrink:0}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#8FBFA6}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-.02em;margin-top:1px;color:#fff}
 .iconbtn{
   width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;
   border-radius:var(--r-full);background:var(--surface);border:1px solid var(--line);
@@ -74,10 +87,12 @@ a{-webkit-tap-highlight-color:transparent}
 }
 .iconbtn:hover{background:var(--surface-2)}
 .iconbtn:active{transform:scale(.92)}
+.hero .iconbtn{background:rgba(255,255,255,.10);border-color:rgba(255,255,255,.16);color:#E6EFEA;box-shadow:none}
+.hero .iconbtn:hover{background:rgba(255,255,255,.18)}
 
-/* stats */
-.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 20px 0}
-.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-sm)}
+/* stats — float over the hero edge */
+.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 20px;margin-top:-34px;position:relative;z-index:1}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-md)}
 .count b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
 .count span{display:block;margin-top:3px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .count.late b{color:var(--danger)}
@@ -96,15 +111,15 @@ a{-webkit-tap-highlight-color:transparent}
 .srchbox input::placeholder{color:var(--faint)}
 .srchbox input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 
-/* tabs */
-.tabs{display:flex;gap:8px;padding:14px 20px 10px}
+/* tabs — segmented control */
+.tabs{display:flex;gap:4px;margin:14px 20px 10px;padding:4px;background:var(--surface-2);border-radius:var(--r-full)}
 .tab{
-  flex:1;min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  flex:1;min-height:44px;border:none;background:transparent;color:var(--muted);
   border-radius:var(--r-full);font-size:13.5px;font-weight:700;
-  transition:background var(--t-fast) ease,color var(--t-fast) ease,border-color var(--t-fast) ease,transform var(--t-fast) var(--ease);
+  transition:background var(--t-fast) ease,color var(--t-fast) ease,box-shadow var(--t-fast) ease,transform var(--t-fast) var(--ease);
 }
 .tab:active{transform:scale(.96)}
-.tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.tab.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-md)}
 
 /* ================================================================
    Case list
@@ -114,7 +129,9 @@ a{-webkit-tap-highlight-color:transparent}
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
   padding:16px;margin-bottom:12px;box-shadow:var(--sh-sm);overflow-wrap:anywhere;
   animation:cardIn .24s var(--ease) backwards;animation-delay:calc(var(--i,0)*30ms);
+  transition:box-shadow var(--t-fast) ease;
 }
+@media (hover:hover){.card:hover{box-shadow:var(--sh-md)}}
 @keyframes cardIn{from{opacity:0;transform:translateY(8px)}}
 .card.flag{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset,var(--sh-sm)}
 
@@ -162,17 +179,19 @@ a{-webkit-tap-highlight-color:transparent}
 /* FAB */
 .fab{
   position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);
-  background:var(--brand);color:#fff;border-radius:var(--r-full);
+  background:linear-gradient(135deg,#1E4A3B,#16302B);color:#fff;border-radius:var(--r-full);
   min-height:52px;padding:0 26px;font-size:15px;font-weight:700;
-  display:inline-flex;align-items:center;gap:8px;box-shadow:var(--sh-lg);z-index:5;
+  display:inline-flex;align-items:center;gap:8px;z-index:5;
+  box-shadow:0 12px 28px rgba(22,48,43,.35),0 2px 8px rgba(22,48,43,.15);
   transition:transform var(--t-fast) var(--ease),filter var(--t-fast) ease;
 }
-.fab:hover{filter:brightness(1.12)}
+.fab:hover{filter:brightness(1.15)}
 .fab:active{transform:translateX(-50%) scale(.95)}
 
 /* empty state */
-.empty{padding:56px 24px;text-align:center;color:var(--muted);animation:fadeIn .3s ease}
-.empty svg{width:42px;height:42px;color:var(--faint);margin-bottom:12px}
+.empty{padding:48px 24px;text-align:center;color:var(--muted);animation:fadeIn .3s ease}
+.empty .ic{width:72px;height:72px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;margin:0 auto 14px}
+.empty .ic svg{width:30px;height:30px;color:var(--faint)}
 .empty b{display:block;font-size:15px;color:var(--ink-2);font-weight:700;margin-bottom:4px}
 .empty p{font-size:13.5px;line-height:1.55;max-width:300px;margin:0 auto}
 
@@ -327,14 +346,19 @@ a{-webkit-tap-highlight-color:transparent}
 <body>
 
 <div class="app">
-  <header class="hdr">
-    <div>
-      <div class="eyebrow">C&amp;I Desk · SGRH</div>
-      <h1>Follow-up Tracker</h1>
-    </div>
-    <button class="iconbtn" id="btnRef" aria-label="Desk reference">
+  <header class="hero">
+    <div class="hero-top">
+      <div class="brand">
+        <img src="icon-192.png" alt="" class="brand-logo">
+        <div>
+          <div class="eyebrow">C&amp;I Desk · SGRH</div>
+          <h1>MediTrack</h1>
+        </div>
+      </div>
+      <button class="iconbtn" id="btnRef" aria-label="Desk reference">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
-    </button>
+      </button>
+    </div>
   </header>
 
   <div class="counts">
@@ -792,7 +816,7 @@ function state(c){
    List rendering
    ================================================================ */
 function emptyState(icon,title,text){
-  return `<div class="empty">${icon}<b>${title}</b><p>${text}</p></div>`;
+  return `<div class="empty"><div class="ic">${icon}</div><b>${title}</b><p>${text}</p></div>`;
 }
 
 function render(){
@@ -1137,7 +1161,7 @@ function notifyFor(c,ts,listKey,label){
       ? `${label} pending for ${c.name} — ${Math.floor(left)}h left of 24h window`
       : `${label} OVERDUE for ${c.name} — ${Math.floor(-left)}h past the 24h deadline`;
     if('Notification' in window&&Notification.permission==='granted'){
-      try{new Notification('C&I Tracker',{body:msg,icon:'icon-192.png'});}catch(e){toast(msg);}
+      try{new Notification('MediTrack',{body:msg,icon:'icon-192.png'});}catch(e){toast(msg);}
     }else toast(msg);
   }
 }
