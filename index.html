@@ -757,7 +757,8 @@ const IC={
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z"/></svg>',
   globe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
   checkCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg>',
-  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  undo:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v0a5 5 0 0 1-5 5H9"/></svg>'
 };
 
 /* ================================================================
@@ -1195,6 +1196,7 @@ function makeCard(c,idx){
       </div>
       <div class="acts">
         ${actBtn('dischargeFor',c.id,'Discharge')}
+        ${actBtn('undoApproval',c.id,'Undo approval','',IC.undo)}
         ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='international'&&c.status==='pending'){
@@ -1205,11 +1207,15 @@ function makeCard(c,idx){
   }else if(c.cat==='international'&&c.status==='cform-done'){
     actions=`<div class="acts">
         ${actBtn('dischargeFor',c.id,'Discharge')}
+        ${actBtn('undoCform',c.id,'Undo C-Form','',IC.undo)}
         ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='international'&&c.status==='frro'){
     actions=`<div class="acts">
         ${actBtn('frroDone',c.id,'Entered on FRRO portal','grn',IC.check)}
+      </div>
+      <div class="acts">
+        ${actBtn('undoDischarge',c.id,'Undo discharge','',IC.undo)}
         ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else{ // cash open
@@ -1290,6 +1296,29 @@ async function frroDone(id){
   const prev=snapCases();
   cases=cases.filter(x=>x.id!==id); saveCases(); render();
   offerUndo(prev,'FRRO done — case closed and removed');
+}
+
+/* ---- persistent "move back" reverts (for actions taken by mistake) ---- */
+function undoApproval(id){            // company: approved -> pending (Open -> Domestic)
+  const c=byId(id); if(!c)return;
+  const prev=snapCases();
+  c.status='pending'; c.validTill=null;
+  saveCases(); setTab('domestic');
+  offerUndo(prev,'Approval undone — moved back to Domestic');
+}
+function undoCform(id){               // international: cform-done -> pending (Open -> International)
+  const c=byId(id); if(!c)return;
+  const prev=snapCases();
+  c.status='pending';
+  saveCases(); setTab('international'); checkNotify();
+  offerUndo(prev,'C-Form undone — moved back to International');
+}
+function undoDischarge(id){           // international: frro -> cform-done (un-discharge, back to Open)
+  const c=byId(id); if(!c)return;
+  const prev=snapCases();
+  c.status='cform-done'; c.dischargeTs=null; c.notifiedF=[];
+  saveCases(); setTab('open');
+  offerUndo(prev,'Discharge undone — patient back in Open');
 }
 /* kept for parity with the original build (console utility; not wired to UI) */
 window.delCase=async id=>{
@@ -1416,7 +1445,7 @@ Warm regards,`;
 }
 
 /* action dispatch for case-card buttons (event delegation) */
-const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendCase,cformDone,frroDone,dischargeFor,editCase};
+const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendCase,cformDone,frroDone,dischargeFor,editCase,undoApproval,undoCform,undoDischarge};
 
 /* ================================================================
    24h reminders (C-Form + FRRO, while app is open)
