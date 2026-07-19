@@ -6,127 +6,336 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#16302B">
+<meta name="description" content="Follow-up tracker for the Corporate & International Desk, SGRH">
 <title>C&I Follow-up Tracker</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  :root{
-    --bg:#F6F7F4; --card:#FFFFFF; --ink:#16302B; --muted:#6B7A76;
-    --line:#E3E7E2; --ok:#2E7D5B; --warn:#C97A1B; --late:#C0392B; --chip:#EEF1ED;
-  }
-  *{box-sizing:border-box; margin:0; padding:0;}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    color:var(--ink); background:var(--bg);}
-  .app{max-width:520px; margin:0 auto; min-height:100vh; padding-bottom:110px; position:relative;}
-  .hdr{padding:18px 16px 10px; display:flex; justify-content:space-between; align-items:flex-start;}
-  .hdr .eyebrow{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600;}
-  .hdr h1{font-size:22px; font-weight:800; letter-spacing:-.02em; margin-top:2px;}
-  .entbtn{border:1px solid var(--line); background:var(--card); color:var(--ink);
-    border-radius:999px; padding:9px 14px; font-size:12.5px; font-weight:700; cursor:pointer;}
-  .counts{display:flex; gap:8px; padding:10px 16px 4px;}
-  .count{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
-  .count b{display:block; font-size:22px; font-weight:800; font-variant-numeric:tabular-nums;}
-  .count span{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; font-weight:600;}
-  .count.late b{color:var(--late);}
-  .count.pend b{color:var(--warn);}
-  .count.open b{color:var(--ok);}
-  .srch{padding:10px 16px 0;}
-  .srch input{width:100%; border:1px solid var(--line); border-radius:999px; padding:10px 16px;
-    font-size:14px; font-family:inherit; background:var(--card); color:var(--ink);}
-  .tabs{display:flex; gap:6px; padding:12px 16px 8px;}
-  .tab{flex:1; border:1px solid var(--line); background:var(--card); color:var(--muted);
-    border-radius:999px; padding:8px 0; font-size:13px; font-weight:600; cursor:pointer;}
-  .tab.on{background:var(--ink); color:#fff; border-color:var(--ink);}
-  .list{padding:6px 16px;}
-  .empty{padding:48px 20px; text-align:center; color:var(--muted); font-size:14px; line-height:1.5;}
-  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:10px;}
-  .card.flag{border-color:var(--late); box-shadow:0 0 0 1px var(--late) inset;}
-  .row1{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
-  .who .nm{font-size:16px; font-weight:700;}
-  .who .co{font-size:13px; color:var(--muted); margin-top:1px;}
-  .dchip{min-width:78px; text-align:center; border-radius:10px; padding:7px 8px; font-variant-numeric:tabular-nums;}
-  .dchip b{display:block; font-size:15px; font-weight:800; line-height:1.1;}
-  .dchip span{font-size:10px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
-  .d-ok{background:#E7F2EC; color:var(--ok);}
-  .d-warn{background:#FBF0DF; color:var(--warn);}
-  .d-late{background:#F9E7E4; color:var(--late);}
-  .meta{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;}
-  .pill{font-size:11px; font-weight:600; background:var(--chip); color:var(--ink); border-radius:999px; padding:4px 9px;}
-  .pill.alert{background:var(--late); color:#fff;}
-  .pill.chased{background:#FBF0DF; color:var(--warn);}
-  .pill.cat{background:var(--ink); color:#fff;}
-  .contact{font-size:13px; margin-top:8px;}
-  .contact a{color:var(--ok); font-weight:700; text-decoration:none;}
-  .fulog{font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5; white-space:pre-line;}
-  .acts{display:flex; gap:6px; margin-top:10px;}
-  .btn{flex:1; border:1px solid var(--line); background:var(--card); border-radius:10px;
-    padding:9px 4px; font-size:12.5px; font-weight:600; color:var(--ink); cursor:pointer;}
-  .btn.pri{background:var(--ink); color:#fff; border-color:var(--ink);}
-  .btn.grn{background:var(--ok); color:#fff; border-color:var(--ok);}
-  .btn.sm{flex:0 0 52px;}
-  .btn.del{flex:0 0 44px; color:var(--late);}
-  .fab{position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
-    background:var(--ink); color:#fff; border:none; border-radius:999px;
-    padding:14px 30px; font-size:15px; font-weight:700; cursor:pointer;
-    box-shadow:0 8px 20px rgba(22,48,43,.30); z-index:5;}
-  .sheetbg{position:fixed; inset:0; background:rgba(15,25,22,.45); display:none; z-index:10;}
-  .sheetbg.open{display:block;}
-  .sheet{position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:520px;
-    background:var(--card); border-radius:18px 18px 0 0; padding:20px 18px 26px; z-index:11;
-    display:none; max-height:90vh; overflow-y:auto;}
-  .sheet.open{display:block;}
-  .sheet h2{font-size:17px; font-weight:800; margin-bottom:14px;}
-  .fld{margin-bottom:12px;}
-  .fld label{display:block; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:5px;}
-  .fld input,.fld select,.fld textarea{width:100%; border:1px solid var(--line); border-radius:10px;
-    padding:11px 12px; font-size:15px; font-family:inherit; color:var(--ink); background:var(--bg);}
-  .fld textarea{resize:vertical; min-height:56px;}
-  .two{display:flex; gap:10px;}
-  .two .fld{flex:1;}
-  .seg{display:flex; gap:6px; margin-bottom:14px;}
-  .seg button{flex:1; border:1px solid var(--line); background:var(--bg); color:var(--muted);
-    border-radius:10px; padding:10px 4px; font-size:12.5px; font-weight:700; cursor:pointer;}
-  .seg button.on{background:var(--ink); color:#fff; border-color:var(--ink);}
-  .codrop{position:relative;}
-  .colist{position:absolute; left:0; right:0; top:100%; background:var(--card); border:1px solid var(--line);
-    border-radius:10px; max-height:200px; overflow-y:auto; z-index:30; box-shadow:0 8px 20px rgba(0,0,0,.12); display:none;}
-  .colist.open{display:block;}
-  .coopt{padding:11px 12px; font-size:14px; border-bottom:1px solid var(--line); cursor:pointer;}
-  .coopt:last-child{border-bottom:none;}
-  .coopt.addnew{color:var(--ok); font-weight:700;}
-  .savebar{display:flex; gap:8px; margin-top:6px;}
-  .savebar .btn{padding:13px 0; font-size:14px;}
-  .note{font-size:12px; color:var(--muted); text-align:center; padding:14px 24px 4px; line-height:1.5;}
-  .toast{position:fixed; top:14px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff;
-    font-size:13px; font-weight:600; padding:10px 18px; border-radius:999px; z-index:50; display:none; max-width:90%; text-align:center;}
-  .panel{position:fixed; inset:0; background:var(--bg); z-index:20; display:none; overflow-y:auto;}
-  .panel.open{display:block;}
-  .panel-in{max-width:520px; margin:0 auto; padding:16px 16px 40px;}
-  .panel-hdr{display:flex; align-items:center; gap:12px; margin-bottom:12px;}
-  .backbtn{border:none; background:none; font-size:22px; cursor:pointer; color:var(--ink); padding:4px 8px;}
-  .panel-hdr h2{font-size:19px; font-weight:800; flex:1;}
-  .addco{border:1px solid var(--ok); background:#E7F2EC; color:var(--ok); border-radius:999px;
-    padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer;}
-  .ecard{background:var(--card); border:1px solid var(--line); border-radius:12px; margin-bottom:8px; overflow:hidden;}
-  .ecard .ehead{padding:13px 14px; font-size:15px; font-weight:700; cursor:pointer; display:flex; justify-content:space-between;}
-  .ecard .ebody{padding:0 14px 12px; display:none;}
-  .ecard.open .ebody{display:block;}
-  .ebody .lines{font-size:13px; line-height:1.7; white-space:pre-line; color:var(--ink);}
-  .ebody textarea{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px;
-    font-size:13px; font-family:inherit; min-height:140px; background:var(--bg); margin-top:8px;}
-  .ebody .eacts{display:flex; gap:6px; margin-top:10px;}
+/* ================================================================
+   Design tokens
+   ================================================================ */
+:root{
+  /* color */
+  --bg:#F6F7F4;            --surface:#FFFFFF;       --surface-2:#EEF1ED;
+  --ink:#16302B;           --ink-2:#3C524B;         --muted:#68776F;
+  --faint:#9AA6A0;         --line:#E4E8E2;          --line-2:#D3DAD4;
+  --brand:#16302B;
+  --accent:#217A56;        --accent-soft:#E6F2EC;
+  --warn:#B26A10;          --warn-soft:#FCF1E0;
+  --danger:#BC3D2F;        --danger-soft:#FAE9E6;
+  /* radius */
+  --r-sm:10px; --r-md:12px; --r-lg:16px; --r-xl:20px; --r-full:999px;
+  /* elevation */
+  --sh-sm:0 1px 2px rgba(22,48,43,.05);
+  --sh-md:0 2px 8px rgba(22,48,43,.07),0 1px 2px rgba(22,48,43,.05);
+  --sh-lg:0 12px 32px rgba(22,48,43,.18),0 2px 8px rgba(22,48,43,.08);
+  /* motion */
+  --ease:cubic-bezier(.32,.72,0,1);
+  --t-fast:.15s; --t-med:.22s;
+  /* device */
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+
+/* ================================================================
+   Base
+   ================================================================ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg); color:var(--ink);
+  overflow-x:clip;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+input,select,textarea{font:inherit;-webkit-tap-highlight-color:transparent}
+a{-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+
+/* ================================================================
+   App shell
+   ================================================================ */
+.app{max-width:520px;margin:0 auto;min-height:100dvh;padding-bottom:calc(124px + var(--safe-b));animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0}}
+
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:calc(20px + var(--safe-t)) 20px 12px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.hdr h1{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-top:2px}
+.iconbtn{
+  width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;
+  border-radius:var(--r-full);background:var(--surface);border:1px solid var(--line);
+  box-shadow:var(--sh-sm);color:var(--ink-2);
+  transition:transform var(--t-fast) var(--ease),background var(--t-fast) ease;
+}
+.iconbtn:hover{background:var(--surface-2)}
+.iconbtn:active{transform:scale(.92)}
+
+/* stats */
+.counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 20px 0}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-sm)}
+.count b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
+.count span{display:block;margin-top:3px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.count.late b{color:var(--danger)}
+.count.pend b{color:var(--warn)}
+.count.open b{color:var(--accent)}
+
+/* search */
+.srch{padding:14px 20px 0}
+.srchbox{position:relative}
+.srchbox svg{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+.srchbox input{
+  width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--r-full);
+  padding:12px 18px 12px 42px;font-size:16px;background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);
+  transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease;
+}
+.srchbox input::placeholder{color:var(--faint)}
+.srchbox input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+/* tabs */
+.tabs{display:flex;gap:8px;padding:14px 20px 10px}
+.tab{
+  flex:1;min-height:44px;border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:var(--r-full);font-size:13.5px;font-weight:700;
+  transition:background var(--t-fast) ease,color var(--t-fast) ease,border-color var(--t-fast) ease,transform var(--t-fast) var(--ease);
+}
+.tab:active{transform:scale(.96)}
+.tab.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* ================================================================
+   Case list
+   ================================================================ */
+.list{padding:4px 20px 0}
+.card{
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+  padding:16px;margin-bottom:12px;box-shadow:var(--sh-sm);overflow-wrap:anywhere;
+  animation:cardIn .24s var(--ease) backwards;animation-delay:calc(var(--i,0)*30ms);
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}}
+.card.flag{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset,var(--sh-sm)}
+
+.row1{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.who{min-width:0}
+.who .nm{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.who .co{font-size:13px;color:var(--muted);margin-top:2px}
+
+.dchip{min-width:82px;text-align:center;border-radius:var(--r-md);padding:8px 10px;font-variant-numeric:tabular-nums;flex-shrink:0}
+.dchip b{display:block;font-size:15px;font-weight:800;line-height:1.15}
+.dchip span{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;opacity:.85}
+.d-ok{background:var(--accent-soft);color:var(--accent)}
+.d-warn{background:var(--warn-soft);color:var(--warn)}
+.d-late{background:var(--danger-soft);color:var(--danger)}
+
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pill{font-size:11px;font-weight:600;background:var(--surface-2);color:var(--ink-2);border-radius:var(--r-full);padding:5px 10px}
+.pill.alert{background:var(--danger);color:#fff}
+.pill.chased{background:var(--warn-soft);color:var(--warn)}
+.pill.cat{background:var(--brand);color:#fff}
+
+.contact{font-size:13.5px;margin-top:10px}
+.contact a{color:var(--accent);font-weight:700;text-decoration:none}
+.fulog{font-size:12.5px;color:var(--muted);margin-top:8px;line-height:1.55;white-space:pre-line}
+
+.acts{display:flex;gap:8px;margin-top:10px}
+.btn{
+  flex:1;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);
+  padding:10px 10px;font-size:13px;font-weight:700;color:var(--ink);box-shadow:var(--sh-sm);
+  transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease),border-color var(--t-fast) ease,filter var(--t-fast) ease;
+}
+.btn:hover{background:var(--surface-2)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn.grn{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.pri:hover,.btn.grn:hover,.btn.dangerpri:hover{filter:brightness(1.12);background:revert-layer}
+.btn.pri:hover{background:var(--brand)} .btn.grn:hover{background:var(--accent)}
+.btn.sm{flex:0 0 68px}
+.btn.danger{color:var(--danger);flex:0 0 auto;padding:10px 14px}
+.btn.dangerpri{background:var(--danger);color:#fff;border-color:var(--danger)}
+.btn.dangerpri:hover{background:var(--danger)}
+.btn svg{flex-shrink:0}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);
+  background:var(--brand);color:#fff;border-radius:var(--r-full);
+  min-height:52px;padding:0 26px;font-size:15px;font-weight:700;
+  display:inline-flex;align-items:center;gap:8px;box-shadow:var(--sh-lg);z-index:5;
+  transition:transform var(--t-fast) var(--ease),filter var(--t-fast) ease;
+}
+.fab:hover{filter:brightness(1.12)}
+.fab:active{transform:translateX(-50%) scale(.95)}
+
+/* empty state */
+.empty{padding:56px 24px;text-align:center;color:var(--muted);animation:fadeIn .3s ease}
+.empty svg{width:42px;height:42px;color:var(--faint);margin-bottom:12px}
+.empty b{display:block;font-size:15px;color:var(--ink-2);font-weight:700;margin-bottom:4px}
+.empty p{font-size:13.5px;line-height:1.55;max-width:300px;margin:0 auto}
+
+.note{font-size:12.5px;color:var(--muted);text-align:center;padding:14px 28px 6px;line-height:1.55}
+
+/* ================================================================
+   Overlays: backdrop, bottom sheets, panels, dialog, toast
+   ================================================================ */
+.sheetbg{
+  position:fixed;inset:0;background:rgba(15,25,22,.44);z-index:10;
+  opacity:0;pointer-events:none;transition:opacity var(--t-med) ease;
+}
+.sheetbg.open{opacity:1;pointer-events:auto}
+
+.sheet{
+  position:fixed;left:50%;bottom:0;width:100%;max-width:520px;z-index:11;
+  background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding:12px 20px calc(24px + var(--safe-b));
+  max-height:90dvh;overflow-y:auto;box-shadow:var(--sh-lg);
+  transform:translate(-50%,105%);visibility:hidden;
+  transition:transform var(--t-med) var(--ease),visibility 0s linear var(--t-med);
+}
+.sheet.open{transform:translate(-50%,0);visibility:visible;transition:transform var(--t-med) var(--ease)}
+.sheet::before{content:"";display:block;width:36px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto 14px}
+.sheet h2{font-size:17px;font-weight:800;margin-bottom:16px;letter-spacing:-.01em}
+
+/* form fields */
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.fld input,.fld select,.fld textarea{
+  width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--r-md);
+  padding:12px 14px;font-size:16px;color:var(--ink);background:var(--bg);
+  transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease,background var(--t-fast) ease;
+}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--faint)}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft)}
+.fld textarea{resize:vertical;min-height:64px}
+.two{display:flex;gap:10px}
+.two .fld{flex:1;min-width:0}
+
+/* segmented control */
+.seg{display:flex;gap:4px;margin-bottom:16px;background:var(--surface-2);padding:4px;border-radius:var(--r-md)}
+.seg button{
+  flex:1;min-height:44px;border-radius:9px;font-size:13px;font-weight:700;color:var(--muted);
+  transition:background var(--t-fast) ease,color var(--t-fast) ease,box-shadow var(--t-fast) ease;
+}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-md)}
+
+/* company dropdown */
+.codrop{position:relative}
+.colist{
+  position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+  max-height:220px;overflow-y:auto;box-shadow:var(--sh-lg);
+  opacity:0;transform:translateY(-4px);pointer-events:none;
+  transition:opacity var(--t-fast) ease,transform var(--t-fast) var(--ease);
+}
+.colist.open{opacity:1;transform:none;pointer-events:auto}
+.coopt{padding:13px 14px;font-size:14px;border-bottom:1px solid var(--line);cursor:pointer;transition:background var(--t-fast) ease}
+.coopt:hover{background:var(--surface-2)}
+.coopt:last-child{border-bottom:none}
+.coopt.addnew{color:var(--accent);font-weight:700}
+
+.savebar{display:flex;gap:8px;margin-top:8px}
+.savebar .btn{min-height:48px;font-size:14px}
+
+/* reference menu */
+.menuitem{
+  width:100%;display:flex;align-items:center;gap:12px;margin-bottom:8px;
+  padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg);
+  font-size:14px;font-weight:700;color:var(--ink);text-align:left;
+  transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease);
+}
+.menuitem:hover{background:var(--surface-2)}
+.menuitem:active{transform:scale(.98)}
+.menuitem .mi-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex-shrink:0}
+.menuitem .chev{margin-left:auto;color:var(--faint)}
+
+/* full-screen panels */
+.panel{
+  position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;
+  transform:translateX(100%);visibility:hidden;
+  transition:transform var(--t-med) var(--ease),visibility 0s linear var(--t-med);
+}
+.panel.open{transform:none;visibility:visible;transition:transform var(--t-med) var(--ease)}
+.panel-in{max-width:520px;margin:0 auto;padding:calc(16px + var(--safe-t)) 20px calc(48px + var(--safe-b))}
+.panel-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.panel-hdr h2{font-size:19px;font-weight:800;flex:1;letter-spacing:-.01em}
+.addco{
+  min-height:44px;border:1px solid var(--accent);background:var(--accent-soft);color:var(--accent);
+  border-radius:var(--r-full);padding:0 16px;font-size:13px;font-weight:700;
+  transition:transform var(--t-fast) var(--ease),filter var(--t-fast) ease;
+}
+.addco:active{transform:scale(.95)}
+
+/* accordion cards */
+.ecard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);margin-bottom:8px;box-shadow:var(--sh-sm)}
+.ehead{
+  width:100%;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:14px;font-size:15px;font-weight:700;text-align:left;color:var(--ink);
+}
+.ehead .esub{font-weight:600;color:var(--muted);font-size:12px;margin-left:auto}
+.ehead .chev{color:var(--faint);flex-shrink:0;transition:transform var(--t-med) var(--ease)}
+.ecard.open .ehead .chev{transform:rotate(180deg)}
+.ereveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease)}
+.ecard.open .ereveal{grid-template-rows:1fr}
+.ebody{overflow:hidden;min-height:0}
+.ebody-in{padding:0 14px 14px}
+.lines{font-size:13px;line-height:1.7;white-space:pre-line;color:var(--ink)}
+.ebody-in textarea{
+  width:100%;border:1px solid var(--line);border-radius:var(--r-md);padding:12px;
+  font-size:16px;min-height:140px;background:var(--bg);color:var(--ink);
+  transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease;
+}
+.ebody-in textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.eacts{display:flex;gap:8px;margin-top:10px}
+
+/* dialog (replaces confirm / prompt) */
+.dlgbg{
+  position:fixed;inset:0;background:rgba(15,25,22,.5);z-index:40;
+  opacity:0;pointer-events:none;transition:opacity var(--t-fast) ease;
+}
+.dlgbg.open{opacity:1;pointer-events:auto}
+.dlg{
+  position:fixed;left:50%;top:50%;z-index:41;width:calc(100% - 48px);max-width:340px;
+  background:var(--surface);border-radius:var(--r-lg);padding:22px 20px 16px;
+  box-shadow:var(--sh-lg);text-align:center;
+  opacity:0;transform:translate(-50%,-50%) scale(.94);visibility:hidden;
+  transition:opacity var(--t-fast) ease,transform var(--t-fast) var(--ease),visibility 0s linear var(--t-fast);
+}
+.dlg.open{opacity:1;transform:translate(-50%,-50%) scale(1);visibility:visible;transition:opacity var(--t-fast) ease,transform var(--t-fast) var(--ease)}
+.dlg h3{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.dlg p{font-size:13.5px;color:var(--muted);line-height:1.55;margin-top:6px}
+.dlg .fld{margin:14px 0 0;text-align:left}
+.dlg-acts{display:flex;gap:8px;margin-top:18px}
+
+/* toast */
+.toast{
+  position:fixed;top:calc(14px + var(--safe-t));left:50%;z-index:60;
+  display:flex;align-items:center;gap:9px;max-width:calc(100% - 32px);
+  background:var(--ink);color:#fff;font-size:13.5px;font-weight:600;
+  padding:12px 18px;border-radius:var(--r-md);box-shadow:var(--sh-lg);
+  opacity:0;transform:translate(-50%,-12px);pointer-events:none;
+  transition:opacity var(--t-med) ease,transform var(--t-med) var(--ease);
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .dot{width:8px;height:8px;border-radius:50%;background:#4CAF87;flex-shrink:0}
+.toast.warn .dot{background:#E2A33C}
+.toast.danger .dot{background:#E5776A}
 </style>
 </head>
 <body>
+
 <div class="app">
-  <div class="hdr">
+  <header class="hdr">
     <div>
       <div class="eyebrow">C&amp;I Desk · SGRH</div>
       <h1>Follow-up Tracker</h1>
     </div>
-    <button class="entbtn" onclick="openMenu()" style="font-size:17px;padding:7px 16px;">＋</button>
-  </div>
+    <button class="iconbtn" id="btnRef" aria-label="Desk reference">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
+    </button>
+  </header>
 
   <div class="counts">
     <div class="count late"><b id="cLate">0</b><span>Action due</span></div>
@@ -134,23 +343,33 @@
     <div class="count open"><b id="cOpen">0</b><span>Open</span></div>
   </div>
 
-  <div class="srch"><input id="srch" placeholder="Search patient, company, doctor…"></div>
+  <div class="srch">
+    <div class="srchbox">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="srch" placeholder="Search patient, company, doctor…" autocomplete="off">
+    </div>
+  </div>
 
-  <div class="tabs">
-    <button class="tab on" data-tab="domestic">Domestic</button>
-    <button class="tab" data-tab="international">International</button>
-    <button class="tab" data-tab="open">Open</button>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="domestic" role="tab">Domestic</button>
+    <button class="tab" data-tab="international" role="tab">International</button>
+    <button class="tab" data-tab="open" role="tab">Open</button>
   </div>
 
   <div class="list" id="list"></div>
   <div class="note" id="note"></div>
 
-  <button class="fab" id="fabAdd">+ New case</button>
+  <button class="fab" id="fabAdd">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    New case
+  </button>
 </div>
 
-<!-- New/Edit case sheet -->
+<!-- shared backdrop for bottom sheets -->
 <div class="sheetbg" id="sheetbg"></div>
-<div class="sheet" id="sheet">
+
+<!-- New / Edit case sheet -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
   <h2 id="sheetTitle">New case</h2>
   <div class="seg" id="catSeg">
     <button data-cat="company" class="on">Company</button>
@@ -158,46 +377,47 @@
     <button data-cat="cash">Cash</button>
   </div>
 
-  <div class="fld"><label>Patient name *</label><input id="fNm" placeholder="e.g. Ramesh Kumar"></div>
+  <div class="fld"><label for="fNm">Patient name *</label><input id="fNm" placeholder="e.g. Ramesh Kumar" autocomplete="off"></div>
 
   <div id="grpCompany">
     <div class="two">
-      <div class="fld"><label>Emp ID *</label><input id="fEmp" placeholder="e.g. 45210"></div>
-      <div class="fld"><label>Reg ID *</label><input id="fReg" placeholder="e.g. SGRH/2026/..."></div>
+      <div class="fld"><label for="fEmp">Emp ID *</label><input id="fEmp" placeholder="e.g. 45210" autocomplete="off"></div>
+      <div class="fld"><label for="fReg">Reg ID *</label><input id="fReg" placeholder="e.g. SGRH/2026/…" autocomplete="off"></div>
     </div>
-    <div class="fld codrop"><label>Company * (search &amp; select)</label>
+    <div class="fld codrop"><label for="fCoSel">Company * (search &amp; select)</label>
       <input id="fCoSel" placeholder="Type to search company…" autocomplete="off">
       <div class="colist" id="coList"></div>
     </div>
     <div class="two">
-      <div class="fld"><label>Approval days</label><input id="fAd" type="number" min="1" placeholder="default 7"></div>
-      <div class="fld"><label>Follow-up days</label><input id="fDy" type="number" min="1" placeholder="1"></div>
+      <div class="fld"><label for="fAd">Approval days</label><input id="fAd" type="number" min="1" placeholder="default 7" inputmode="numeric"></div>
+      <div class="fld"><label for="fDy">Follow-up days</label><input id="fDy" type="number" min="1" placeholder="1" inputmode="numeric"></div>
     </div>
-    <div class="fld"><label>Company email (for approval mail)</label><input id="fEm" type="email" placeholder="hr@company.com"></div>
+    <div class="fld"><label for="fEm">Company email (for approval mail)</label><input id="fEm" type="email" placeholder="hr@company.com" autocomplete="off"></div>
   </div>
 
   <div id="grpIntl" style="display:none;">
-    <div class="fld"><label>Reg No *</label><input id="fRegI" placeholder="e.g. SGRH/2026/..."></div>
-    <div class="fld"><label>Admitted in *</label><input id="fWard" placeholder="e.g. Ward 4B / Room 312"></div>
+    <div class="fld"><label for="fRegI">Reg No *</label><input id="fRegI" placeholder="e.g. SGRH/2026/…" autocomplete="off"></div>
+    <div class="fld"><label for="fWard">Admitted in *</label><input id="fWard" placeholder="e.g. Ward 4B / Room 312" autocomplete="off"></div>
     <div class="two">
-      <div class="fld"><label>Admission date *</label><input id="fDtI" type="date"></div>
-      <div class="fld"><label>Admission time *</label><input id="fTmI" type="time"></div>
+      <div class="fld"><label for="fDtI">Admission date *</label><input id="fDtI" type="date"></div>
+      <div class="fld"><label for="fTmI">Admission time *</label><input id="fTmI" type="time"></div>
     </div>
-    <div class="fld"><label>Country</label><input id="fCty" placeholder="e.g. Bangladesh"></div>
+    <div class="fld"><label for="fCty">Country</label><input id="fCty" placeholder="e.g. Bangladesh" autocomplete="off"></div>
   </div>
 
   <div id="grpCash" style="display:none;">
-    <div class="fld"><label>Reg ID</label><input id="fRegC" placeholder="e.g. SGRH/2026/..."></div>
+    <div class="fld"><label for="fRegC">Reg ID</label><input id="fRegC" placeholder="e.g. SGRH/2026/…" autocomplete="off"></div>
   </div>
 
-  <div class="fld"><label>Patient phone</label><input id="fPh" type="tel" placeholder="98XXXXXXXX"></div>
-  <div class="fld"><label>Treating doctor *</label><input id="fDr" placeholder="e.g. Dr. Mehta"></div>
+  <div class="fld"><label for="fPh">Patient phone</label><input id="fPh" type="tel" placeholder="98XXXXXXXX" inputmode="tel" autocomplete="off"></div>
+  <div class="fld"><label for="fDr">Treating doctor *</label><input id="fDr" placeholder="e.g. Dr. Mehta" autocomplete="off"></div>
 
   <div id="grpDom2">
-    <div class="fld"><label>Date of admission *</label><input id="fDt" type="date"></div>
+    <div class="fld"><label for="fDt">Date of admission *</label><input id="fDt" type="date"></div>
   </div>
 
-  <div class="fld"><label>Remarks</label><textarea id="fNo" placeholder="Any remarks — ward, UHID, reference, condition…"></textarea></div>
+  <div class="fld"><label for="fNo">Remarks</label><textarea id="fNo" placeholder="Any remarks — ward, UHID, reference, condition…"></textarea></div>
+
   <div class="savebar">
     <button class="btn" id="btnCancel">Cancel</button>
     <button class="btn pri" id="btnSave">Save case</button>
@@ -205,38 +425,51 @@
 </div>
 
 <!-- Discharge sheet -->
-<div class="sheet" id="dsheet">
+<div class="sheet" id="dsheet" role="dialog" aria-modal="true">
   <h2>Discharge patient</h2>
   <div class="fulog" id="dWho" style="margin:-6px 0 12px;"></div>
   <div class="two">
-    <div class="fld"><label>Date of discharge *</label><input id="dDt" type="date"></div>
-    <div class="fld"><label>Time of discharge *</label><input id="dTm" type="time"></div>
+    <div class="fld"><label for="dDt">Date of discharge *</label><input id="dDt" type="date"></div>
+    <div class="fld"><label for="dTm">Time of discharge *</label><input id="dTm" type="time"></div>
   </div>
   <div class="fulog" id="dNote"></div>
   <div class="savebar">
-    <button class="btn" onclick="closeDsheet()">Cancel</button>
-    <button class="btn pri" onclick="saveDischarge()">Confirm discharge</button>
+    <button class="btn" id="dCancel">Cancel</button>
+    <button class="btn pri" id="dConfirm">Confirm discharge</button>
   </div>
 </div>
 
-<!-- Reference menu -->
-<div class="sheet" id="menuSheet">
+<!-- Desk reference menu -->
+<div class="sheet" id="menuSheet" role="dialog" aria-modal="true">
   <h2>Desk reference</h2>
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <button class="btn" style="padding:14px;font-size:14px;" onclick="closeMenu();openEnts()">📋 Entitlements</button>
-    <button class="btn" style="padding:14px;font-size:14px;" onclick="closeMenu();openCos()">🏥 Companies &amp; what we offer (IPD/OPD)</button>
-  </div>
+  <button class="menuitem" id="miEnts">
+    <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h6"/></svg></span>
+    Entitlements
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
+  <button class="menuitem" id="miCos">
+    <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg></span>
+    Companies &amp; what we offer (IPD/OPD)
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
 </div>
 
 <!-- Companies panel -->
 <div class="panel" id="coPanel">
   <div class="panel-in">
     <div class="panel-hdr">
-      <button class="backbtn" onclick="closeCos()">←</button>
+      <button class="iconbtn" id="coBack" aria-label="Back">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M5 12h14"/></svg>
+      </button>
       <h2>Empanelled companies</h2>
-      <button class="addco" onclick="addCo()">+ Add</button>
+      <button class="addco" id="coAdd">+ Add</button>
     </div>
-    <div class="srch" style="padding:0 0 12px;"><input id="coSrchP" placeholder="Search company or acronym…"></div>
+    <div class="srch" style="padding:0 0 12px;">
+      <div class="srchbox">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="coSrchP" placeholder="Search company or acronym…" autocomplete="off">
+      </div>
+    </div>
     <div id="coListP"></div>
   </div>
 </div>
@@ -245,19 +478,44 @@
 <div class="panel" id="entPanel">
   <div class="panel-in">
     <div class="panel-hdr">
-      <button class="backbtn" onclick="closeEnts()">←</button>
+      <button class="iconbtn" id="entBack" aria-label="Back">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M5 12h14"/></svg>
+      </button>
       <h2>Entitlements</h2>
-      <button class="addco" onclick="addCompany()">+ Add company</button>
+      <button class="addco" id="entAdd">+ Add company</button>
     </div>
-    <div class="srch" style="padding:0 0 12px;"><input id="entSrch" placeholder="Search company…"></div>
+    <div class="srch" style="padding:0 0 12px;">
+      <div class="srchbox">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="entSrch" placeholder="Search company…" autocomplete="off">
+      </div>
+    </div>
     <div id="entList"></div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<!-- Confirm / prompt dialog -->
+<div class="dlgbg" id="dlgBg"></div>
+<div class="dlg" id="dlgBox" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <h3 id="dlgTitle"></h3>
+  <p id="dlgMsg"></p>
+  <div class="fld" id="dlgFld" hidden><input id="dlgInput" autocomplete="off"></div>
+  <div class="dlg-acts">
+    <button class="btn" id="dlgCancel">Cancel</button>
+    <button class="btn pri" id="dlgOk">Confirm</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status"><span class="dot"></span><span id="toastMsg"></span></div>
 
 <script>
-const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1';
+'use strict';
+
+/* ================================================================
+   Constants & seed data
+   ================================================================ */
+const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
 
@@ -277,8 +535,7 @@ const ENT_SEED={
 "NHPC":"Cat-3 (Semi-Paying) — W0 to W5\nCat-2 (Semi-Nursing) — W6 to W10\nCat-2 (Semi-Nursing) — All Supervisors\nCat-1D (Single Room) — E0 to E5\nCat-1C (Deluxe Room) — E6 to E7\nCat-1B (Suite Room) — E8 and E9\nCat-1A (Premium Suite Room) — Directors and CMD"
 };
 
-
-/* ---------- empanelled companies (IPD/OPD offers) ---------- */
+/* empanelled companies (IPD/OPD offers) */
 const A_OPD="Rs. 1000 per Consultation (except Psychiatry and Psychology), to be deposited by the patients in OPD. No Discount on Investigations, Procedures done on OPD basis.";
 const B_OPD="Rs. 1,000/- per consultation in OPD, 1500/- for Psychiatry and Psychology. No Discount on Investigation, Procedures on OPD basis.";
 const C_OPD="Rs. 1,000/- per consultation in OPD (except Psychiatry and Psychology). No Discount on Investigation, Procedures on OPD basis.";
@@ -379,12 +636,18 @@ const CO_SEED=[
 ["UPPCL","Uttar Pradesh Power Corporation Limited","N","Not Credit, "+I1,C_OPD],
 ["WHO","World Health Organization","Y","Credit. Discount not applicable on IPD Billing excluding medical and non-medical consumables and outsourced services.","NO"]
 ];
-const CO_KEY='ci_companies_v1';
-let cos={};
 
-let cases=[], ents={}, tab='domestic', editId=null, cat='company', query='', dischargeId=null;
+/* ================================================================
+   App state
+   ================================================================ */
+let cases=[], ents={}, cos={};
+let tab='domestic', editId=null, cat='company', query='', dischargeId=null;
 
+/* ================================================================
+   DOM helpers & utilities
+   ================================================================ */
 const $=id=>document.getElementById(id);
+const byId=id=>cases.find(x=>x.id===id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -392,22 +655,73 @@ const fmt=s=>{const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-IN
 const fmtDT=ts=>new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true});
 const daysSince=s=>Math.floor((today()-new Date(s+'T00:00:00'))/86400000);
 const hrsSince=ts=>(Date.now()-new Date(ts).getTime())/3600000;
-function addDays(isoDate,n){const d=new Date(isoDate+'T00:00:00');d.setDate(d.getDate()+n);return iso(d);}
-function esc(s){return String(s||'').replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));}
-function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
+const addDays=(isoDate,n)=>{const d=new Date(isoDate+'T00:00:00');d.setDate(d.getDate()+n);return iso(d);};
+const esc=s=>String(s||'').replace(/[<>&"]/g,m=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
 
-/* status model:
-   company:  pending -> approved (Open) -> [discharge => deleted]
-   cash:     open (Open)               -> [discharge => deleted]
-   intl:     pending (C-Form) -> cform-done (Open) -> [discharge => frro] -> [FRRO done => deleted]
-*/
-const pendingResp=c=>c.status==='pending'||(c.cat==='international'&&c.status==='frro');
-const openStat=c=>['approved','open','cform-done'].includes(c.status);
+/* icons reused in generated markup */
+const IC={
+  mail:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  chev:'<svg class="chev" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.7 4H7.3a2 2 0 0 0-1.8 1.1z"/></svg>',
+  globe:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+  checkCircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8.5 12.5 2.5 2.5 5-5.5"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>'
+};
 
+/* ================================================================
+   Toast
+   ================================================================ */
+let toastTimer=null;
+function toast(msg,kind){
+  const t=$('toast');
+  $('toastMsg').textContent=msg;
+  t.classList.remove('warn','danger');
+  if(kind)t.classList.add(kind);
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+/* ================================================================
+   Dialog — styled replacement for confirm() / prompt()
+   ================================================================ */
+let dlgResolve=null, dlgHasInput=false;
+function dlgOpen({title,message,okText='Confirm',cancelText='Cancel',danger=false,input=null}){
+  $('dlgTitle').textContent=title||'';
+  $('dlgMsg').textContent=message||'';
+  $('dlgMsg').hidden=!message;
+  dlgHasInput=!!input;
+  $('dlgFld').hidden=!input;
+  const inp=$('dlgInput');
+  inp.value=''; inp.placeholder=(input&&input.placeholder)||'';
+  $('dlgOk').textContent=okText;
+  $('dlgCancel').textContent=cancelText;
+  $('dlgOk').classList.toggle('dangerpri',!!danger);
+  $('dlgOk').classList.toggle('pri',!danger);
+  $('dlgBg').classList.add('open');
+  $('dlgBox').classList.add('open');
+  if(input)setTimeout(()=>inp.focus(),120);
+  return new Promise(r=>{dlgResolve=r;});
+}
+function dlgClose(val){
+  $('dlgBg').classList.remove('open');
+  $('dlgBox').classList.remove('open');
+  const r=dlgResolve; dlgResolve=null;
+  if(r)r(val);
+}
+const uiConfirm=opts=>dlgOpen(opts);                                    // resolves true / false
+const uiPrompt=opts=>dlgOpen({...opts,input:{placeholder:opts.placeholder||''}}); // resolves string / null
+
+/* ================================================================
+   Storage
+   ================================================================ */
 function load(){
   try{cases=JSON.parse(localStorage.getItem(CASES_KEY)||'null')||[];}catch(e){cases=[];}
   if(!cases.length){
-    try{const old=JSON.parse(localStorage.getItem(OLD_KEY)||'null');
+    // one-time migration from the v1 key
+    try{
+      const old=JSON.parse(localStorage.getItem(OLD_KEY)||'null');
       if(old&&old.length){cases=old.map(c=>Object.assign({cat:'company',regId:'',notified:[]},c));}
     }catch(e){}
   }
@@ -425,45 +739,62 @@ function load(){
   if(!cos){cos={};CO_SEED.forEach(r=>cos[r[0]]={name:r[1],emp:r[2],ipd:r[3],opd:r[4]});saveCos();}
   render(); checkNotify();
 }
-function saveCases(){try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){toast('Save failed');}}
-function saveEnts(){try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){toast('Save failed');}}
-function saveCos(){try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){toast('Save failed');}}
+const SAVE_ERR='Couldn’t save — device storage may be full.';
+function saveCases(){try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){toast(SAVE_ERR,'danger');}}
+function saveEnts(){try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){toast(SAVE_ERR,'danger');}}
+function saveCos(){try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){toast(SAVE_ERR,'danger');}}
 
-/* ---------- state ---------- */
+/* ================================================================
+   Status model
+   ----------------------------------------------------------------
+   company:  pending -> approved (Open) -> [discharge => removed]
+   cash:     open (Open)                -> [discharge => removed]
+   intl:     pending (C-Form) -> cform-done (Open)
+             -> [discharge => frro] -> [FRRO done => removed]
+   ================================================================ */
+const pendingResp=c=>c.status==='pending'||(c.cat==='international'&&c.status==='frro');
+const openStat=c=>['approved','open','cform-done'].includes(c.status);
+
 function state(c){
   if(c.cat==='international'&&c.status==='pending'){
     const h=hrsSince(c.admitTs);
-    if(h>=WINDOW_H) return 'late';
-    if(h>=WINDOW_H-6) return 'warn';
+    if(h>=WINDOW_H)return 'late';
+    if(h>=WINDOW_H-6)return 'warn';
     return 'ok';
   }
   if(c.cat==='international'&&c.status==='frro'){
     const h=hrsSince(c.dischargeTs);
-    if(h>=WINDOW_H) return 'late';
-    if(h>=WINDOW_H-6) return 'warn';
+    if(h>=WINDOW_H)return 'late';
+    if(h>=WINDOW_H-6)return 'warn';
     return 'ok';
   }
   if(c.cat==='company'&&c.status==='pending'){
-    if(!c.days) return 'ok';
+    if(!c.days)return 'ok';
     const el=daysSince(c.sent);
     if(el>c.days){
-      if(c.snooze && today()<new Date(c.snooze+'T00:00:00')) return 'chased';
+      if(c.snooze&&today()<new Date(c.snooze+'T00:00:00'))return 'chased';
       return 'late';
     }
-    if(el>=c.days-1) return 'warn';
+    if(el>=c.days-1)return 'warn';
     return 'ok';
   }
   if(c.cat==='company'&&c.status==='approved'){
-    if(!c.validTill) return 'ok';
+    if(!c.validTill)return 'ok';
     const over=daysSince(c.validTill);
-    if(over>0) return 'late';
-    if(over>=-1) return 'warn';
+    if(over>0)return 'late';
+    if(over>=-1)return 'warn';
     return 'ok';
   }
   return 'ok';
 }
 
-/* ---------- render ---------- */
+/* ================================================================
+   List rendering
+   ================================================================ */
+function emptyState(icon,title,text){
+  return `<div class="empty">${icon}<b>${title}</b><p>${text}</p></div>`;
+}
+
 function render(){
   let pool;
   if(tab==='domestic') pool=cases.filter(c=>c.cat!=='international'&&c.status==='pending');
@@ -485,14 +816,17 @@ function render(){
 
   const L=$('list'); L.innerHTML='';
   if(!show.length){
-    L.innerHTML='<div class="empty">'+(query?'No cases match your search.'
-      :tab==='international'?'No international action pending — no C-Form or FRRO entries due.'
-      :tab==='open'?'No admitted patients right now. Approved company, cash, and C-Form-done international patients appear here until discharge.'
-      :'No approvals awaited. Tap <b>+ New case</b> to add a company patient.')+'</div>';
+    L.innerHTML=query
+      ? emptyState(IC.search,'No matches','No cases match your search. Try a name, company, or Reg ID.')
+      : tab==='international'
+      ? emptyState(IC.globe,'All clear','No international action pending — no C-Form or FRRO entries due.')
+      : tab==='open'
+      ? emptyState(IC.checkCircle,'No admitted patients','Approved company, cash, and C-Form-done international patients appear here until discharge.')
+      : emptyState(IC.inbox,'No approvals awaited','Tap “New case” below to add a company patient.');
   }
-  show.forEach(c=>L.appendChild(makeCard(c)));
+  show.forEach((c,i)=>L.appendChild(makeCard(c,i)));
 
-  $('note').textContent = late
+  $('note').textContent=late
     ? '⚠ '+late+' case'+(late===1?'':'s')+' in this tab need'+(late===1?'s':'')+' action now.'
     : 'Open the app each morning — urgent cases rise to the top automatically.';
 }
@@ -506,18 +840,21 @@ function hourChip(ts,label,st){
   return `<div class="dchip d-late"><b>${Math.floor(-left)}h over</b><span>${label} due</span></div>`;
 }
 
-function makeCard(c){
+const actBtn=(act,id,label,cls,icon)=>
+  `<button class="btn${cls?' '+cls:''}" data-act="${act}" data-id="${id}">${icon||''}${label}</button>`;
+
+function makeCard(c,idx){
   const st=state(c);
   let chip='', sub='', pills='', actions='';
   const catPill=`<span class="pill cat">${c.cat==='company'?'Company':c.cat==='international'?'International':'Cash'}</span>`;
 
   if(c.cat==='international'&&c.status==='pending'){
     chip=hourChip(c.admitTs,'C-Form',st);
-    if(st==='late') pills+=`<span class="pill alert">C-FORM OVERDUE</span>`;
+    if(st==='late')pills+=`<span class="pill alert">C-FORM OVERDUE</span>`;
   }
   else if(c.cat==='international'&&c.status==='frro'){
     chip=hourChip(c.dischargeTs,'FRRO',st);
-    if(st==='late') pills+=`<span class="pill alert">FRRO OVERDUE</span>`;
+    if(st==='late')pills+=`<span class="pill alert">FRRO OVERDUE</span>`;
     pills+=`<span class="pill">Discharged ${esc(fmtDT(c.dischargeTs))}</span>`;
   }
   else if(c.cat==='international'&&c.status==='cform-done'){
@@ -543,73 +880,74 @@ function makeCard(c){
     if(c.days){
       const el=daysSince(c.sent);
       chip=`<div class="dchip d-${st==='late'?'late':(st==='warn'||st==='chased')?'warn':'ok'}"><b>D+${el}</b><span>of ${c.days} days</span></div>`;
-      if(st==='late') pills+=`<span class="pill alert">FOLLOW UP — ${el-c.days}d over</span>`;
-      if(st==='chased') pills+=`<span class="pill chased">Chased — re-flags ${fmt(c.snooze)}</span>`;
+      if(st==='late')pills+=`<span class="pill alert">FOLLOW UP — ${el-c.days}d over</span>`;
+      if(st==='chased')pills+=`<span class="pill chased">Chased — re-flags ${fmt(c.snooze)}</span>`;
     }else chip=`<div class="dchip d-ok"><b>—</b><span>no timer</span></div>`;
   }
-  else{ // cash open
+  else{ // cash, open
     chip=`<div class="dchip d-ok"><b>✓</b><span>admitted</span></div>`;
   }
 
-  if(c.cat==='company') sub=esc(c.co||'');
-  else if(c.cat==='international') sub=esc([c.country,c.ward].filter(Boolean).join(' · '));
+  if(c.cat==='company')sub=esc(c.co||'');
+  else if(c.cat==='international')sub=esc([c.country,c.ward].filter(Boolean).join(' · '));
   else sub='Cash patient';
 
   if(c.cat==='company'){
-    if(c.emp) pills+=`<span class="pill">Emp ${esc(c.emp)}</span>`;
-    if(c.regId) pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
-  } else if(c.regId) pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
-  if(c.dr) pills+=`<span class="pill">${esc(c.dr)}</span>`;
-  if(c.cat==='international') pills+=`<span class="pill">Admitted ${esc(fmtDT(c.admitTs))}</span>`;
-  else if(c.sent) pills+=`<span class="pill">Admitted ${fmt(c.sent)}</span>`;
+    if(c.emp)pills+=`<span class="pill">Emp ${esc(c.emp)}</span>`;
+    if(c.regId)pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
+  }else if(c.regId)pills+=`<span class="pill">Reg ${esc(c.regId)}</span>`;
+  if(c.dr)pills+=`<span class="pill">${esc(c.dr)}</span>`;
+  if(c.cat==='international')pills+=`<span class="pill">Admitted ${esc(fmtDT(c.admitTs))}</span>`;
+  else if(c.sent)pills+=`<span class="pill">Admitted ${fmt(c.sent)}</span>`;
 
   const contact=c.phone?`<div class="contact"><a href="tel:${esc(c.phone)}">${esc(c.phone)}</a></div>`:'';
-  const fus=(c.fu||[]);
+  const fus=c.fu||[];
   const fuTxt=fus.length?`<div class="fulog">Followed up: ${fus.map(fmt).join(', ')}</div>`:'';
 
   if(c.cat==='company'&&c.status==='pending'){
     actions=`<div class="acts">
-        <button class="btn pri" onclick="approvalEmail('${c.id}')">✉ Approval email</button>
-        <button class="btn" onclick="chaseEmail('${c.id}')">✉ Follow-up</button>
+        ${actBtn('approvalEmail',c.id,'Approval email','pri',IC.mail)}
+        ${actBtn('chaseEmail',c.id,'Follow-up','',IC.mail)}
       </div>
       <div class="acts">
-        <button class="btn" onclick="logFU('${c.id}')">Logged follow-up</button>
-        <button class="btn grn" onclick="approveCase('${c.id}')">Approved</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('logFU',c.id,'Logged follow-up')}
+        ${actBtn('approveCase',c.id,'Approved','grn',IC.check)}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='company'&&c.status==='approved'){
     actions=`<div class="acts">
-        <button class="btn pri" onclick="extensionEmail('${c.id}')">✉ Extension email</button>
-        <button class="btn grn" onclick="extendCase('${c.id}')">Extension approved</button>
+        ${actBtn('extensionEmail',c.id,'Extension email','pri',IC.mail)}
+        ${actBtn('extendCase',c.id,'Extension approved','grn',IC.check)}
       </div>
       <div class="acts">
-        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('dischargeFor',c.id,'Discharge')}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='international'&&c.status==='pending'){
     actions=`<div class="acts">
-        <button class="btn grn" onclick="cformDone('${c.id}')">✓ C-Form filled</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('cformDone',c.id,'C-Form filled','grn',IC.check)}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='international'&&c.status==='cform-done'){
     actions=`<div class="acts">
-        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('dischargeFor',c.id,'Discharge')}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else if(c.cat==='international'&&c.status==='frro'){
     actions=`<div class="acts">
-        <button class="btn grn" onclick="frroDone('${c.id}')">✓ Entered on FRRO portal</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('frroDone',c.id,'Entered on FRRO portal','grn',IC.check)}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }else{ // cash open
     actions=`<div class="acts">
-        <button class="btn" onclick="dischargeFor('${c.id}')">Discharge</button>
-        <button class="btn sm" onclick="editCase('${c.id}')">Edit</button>
+        ${actBtn('dischargeFor',c.id,'Discharge')}
+        ${actBtn('editCase',c.id,'Edit','sm')}
       </div>`;
   }
 
   const d=document.createElement('div');
   d.className='card'+(st==='late'?' flag':'');
+  d.style.setProperty('--i',Math.min(idx,8));
   d.innerHTML=`
     <div class="row1">
       <div class="who"><div class="nm">${esc(c.name)}</div><div class="co">${sub}</div></div>
@@ -623,81 +961,96 @@ function makeCard(c){
   return d;
 }
 
-/* ---------- case actions ---------- */
-window.logFU=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+/* ================================================================
+   Case actions
+   ================================================================ */
+function logFU(id){
+  const c=byId(id); if(!c)return;
   c.fu=c.fu||[]; c.fu.push(iso(today()));
   const s=today(); s.setDate(s.getDate()+SNOOZE_DAYS); c.snooze=iso(s);
   saveCases(); render();
   toast('Logged — re-flags on '+fmt(c.snooze)+' if still pending');
-};
-window.approveCase=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+}
+function approveCase(id){
+  const c=byId(id); if(!c)return;
   c.status='approved';
-  c.validTill = addDays(c.sent, c.apprDays||7);
+  c.validTill=addDays(c.sent,c.apprDays||7);
   saveCases(); render();
   toast('Approved — moved to Open, valid till '+fmt(c.validTill));
-};
-window.extendCase=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
-  c.validTill = addDays(c.validTill || iso(today()), c.apprDays||7);
+}
+function extendCase(id){
+  const c=byId(id); if(!c)return;
+  c.validTill=addDays(c.validTill||iso(today()),c.apprDays||7);
   saveCases(); render();
   toast('Extension approved — valid till '+fmt(c.validTill));
-};
-window.cformDone=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+}
+function cformDone(id){
+  const c=byId(id); if(!c)return;
   c.status='cform-done'; saveCases(); render();
   toast('C-Form filled — patient moved to Open');
-};
-window.frroDone=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
-  if(!confirm('FRRO entry done for '+c.name+'? The case will be removed.'))return;
+}
+async function frroDone(id){
+  const c=byId(id); if(!c)return;
+  const ok=await uiConfirm({
+    title:'FRRO entry done?',
+    message:'FRRO entry done for '+c.name+'? The case will be closed and removed.',
+    okText:'FRRO done'
+  });
+  if(!ok)return;
   cases=cases.filter(x=>x.id!==id); saveCases(); render();
   toast('FRRO done — case closed and removed');
+}
+/* kept for parity with the original build (console utility; not wired to UI) */
+window.delCase=async id=>{
+  const ok=await uiConfirm({title:'Delete case?',message:'Delete this case permanently?',okText:'Delete',danger:true});
+  if(!ok)return;
+  cases=cases.filter(x=>x.id!==id); saveCases(); render(); toast('Deleted');
 };
 
-/* discharge */
-window.dischargeFor=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+/* ---------- discharge flow ---------- */
+function dischargeFor(id){
+  const c=byId(id); if(!c)return;
   dischargeId=id;
   $('dWho').textContent=c.name+(c.co?' · '+c.co:'')+(c.cat==='international'?' · International':'');
-  $('dNote').textContent = c.cat==='international'
+  $('dNote').textContent=c.cat==='international'
     ? 'After discharge, a 24-hour FRRO portal clock will start for this patient.'
     : 'On discharge, this case will be closed and removed from the tracker.';
   $('dDt').value=iso(today());
   $('dTm').value=new Date().toTimeString().slice(0,5);
-  $('dsheet').classList.add('open');$('sheetbg').classList.add('open');
-};
-window.closeDsheet=()=>{$('dsheet').classList.remove('open');if(!$('sheet').classList.contains('open'))$('sheetbg').classList.remove('open');dischargeId=null;};
-window.saveDischarge=()=>{
-  const c=cases.find(x=>x.id===dischargeId); if(!c){closeDsheet();return;}
+  $('dsheet').classList.add('open'); syncBackdrop();
+}
+function closeDsheet(){
+  $('dsheet').classList.remove('open'); dischargeId=null; syncBackdrop();
+}
+function saveDischarge(){
+  const c=byId(dischargeId); if(!c){closeDsheet();return;}
   const dt=$('dDt').value, tm=$('dTm').value;
-  if(!dt||!tm){toast('Enter discharge date and time');return;}
+  if(!dt||!tm){toast('Enter discharge date and time','warn');return;}
   if(c.cat==='international'){
     c.status='frro';
     c.dischargeTs=new Date(dt+'T'+tm).toISOString();
     c.notifiedF=[];
     saveCases(); closeDsheet();
-    tab='international';
-    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
-    render(); checkNotify();
+    setTab('international');
+    checkNotify();
     toast('Discharged — FRRO 24h clock started');
   }else{
     cases=cases.filter(x=>x.id!==dischargeId);
     saveCases(); closeDsheet(); render();
     toast('Discharged — case closed and removed');
   }
-};
+}
 
-window.delCase=id=>{
-  if(!confirm('Delete this case permanently?'))return;
-  cases=cases.filter(x=>x.id!==id); saveCases(); render(); toast('Deleted');
-};
-
-/* ---------- emails ---------- */
+/* ================================================================
+   Email composers (mailto:)
+   ================================================================ */
 function drName(s){s=(s||'').trim();return /^dr\.?\s/i.test(s)?s.replace(/^dr\.?\s*/i,'Dr. '):('Dr. '+s);}
-window.approvalEmail=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+function sendMail(c,subject,body){
+  if(!c.email)toast('No company email saved — add it via Edit','warn');
+  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+function approvalEmail(id){
+  const c=byId(id); if(!c)return;
   const subject=`REQUEST FOR APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
   const body=
 `Dear Sir/Madam,
@@ -715,10 +1068,10 @@ Should you require any additional documents or further information, please do no
 Thank you for your attention to this matter.
 
 Warm regards,`;
-  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-};
-window.chaseEmail=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+  sendMail(c,subject,body);
+}
+function chaseEmail(id){
+  const c=byId(id); if(!c)return;
   const el=daysSince(c.sent);
   const over=(c.days&&el>c.days)?` It has now been ${el} days since admission, ${el-c.days} day${el-c.days===1?'':'s'} past the expected timeline.`:'';
   const subject=`Follow-up: Approval pending | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
@@ -739,10 +1092,10 @@ Kindly expedite the approval and share the status at the earliest.
 Should you require any additional documents or further information, please contact us at ${DESK_PHONES}.
 
 Warm regards,`;
-  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-};
-window.extensionEmail=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+  sendMail(c,subject,body);
+}
+function extensionEmail(id){
+  const c=byId(id); if(!c)return;
   const subject=`REQUEST FOR EXTENSION OF APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
   const body=
 `Dear Sir/Madam,
@@ -764,47 +1117,65 @@ Should you require any additional documents or further information, please do no
 Thank you for your attention to this matter.
 
 Warm regards,`;
-  location.href=`mailto:${encodeURIComponent(c.email||'')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-};
+  sendMail(c,subject,body);
+}
 
-/* ---------- 24h notifications (C-Form + FRRO, while app is open) ---------- */
-function notifyFor(c, ts, listKey, label){
+/* action dispatch for case-card buttons (event delegation) */
+const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendCase,cformDone,frroDone,dischargeFor,editCase};
+
+/* ================================================================
+   24h reminders (C-Form + FRRO, while app is open)
+   ================================================================ */
+function notifyFor(c,ts,listKey,label){
   const h=hrsSince(ts);
   const t=Math.floor(h/6)*6;
   c[listKey]=c[listKey]||[];
-  if(t>=6 && !c[listKey].includes(t)){
+  if(t>=6&&!c[listKey].includes(t)){
     c[listKey].push(t); saveCases();
     const left=WINDOW_H-h;
     const msg=left>0
       ? `${label} pending for ${c.name} — ${Math.floor(left)}h left of 24h window`
       : `${label} OVERDUE for ${c.name} — ${Math.floor(-left)}h past the 24h deadline`;
-    if('Notification' in window && Notification.permission==='granted'){
-      try{ new Notification('C&I Tracker',{body:msg,icon:'icon-192.png'}); }catch(e){ toast(msg); }
-    } else toast(msg);
+    if('Notification' in window&&Notification.permission==='granted'){
+      try{new Notification('C&I Tracker',{body:msg,icon:'icon-192.png'});}catch(e){toast(msg);}
+    }else toast(msg);
   }
 }
 function checkNotify(){
   const need=cases.some(c=>c.cat==='international'&&(c.status==='pending'||c.status==='frro'));
-  if(!need) return;
-  if('Notification' in window && Notification.permission==='default') Notification.requestPermission();
+  if(!need)return;
+  if('Notification' in window&&Notification.permission==='default')Notification.requestPermission();
   cases.forEach(c=>{
-    if(c.cat!=='international') return;
-    if(c.status==='pending') notifyFor(c, c.admitTs, 'notified', 'C-Form');
-    if(c.status==='frro') notifyFor(c, c.dischargeTs, 'notifiedF', 'FRRO entry');
+    if(c.cat!=='international')return;
+    if(c.status==='pending')notifyFor(c,c.admitTs,'notified','C-Form');
+    if(c.status==='frro')notifyFor(c,c.dischargeTs,'notifiedF','FRRO entry');
   });
 }
-setInterval(()=>{checkNotify(); if(tab==='international') render();}, 60000);
 
-/* ---------- form ---------- */
+/* ================================================================
+   Bottom sheets & backdrop
+   ================================================================ */
+function syncBackdrop(){
+  const any=['sheet','dsheet','menuSheet'].some(id=>$(id).classList.contains('open'));
+  $('sheetbg').classList.toggle('open',any);
+}
+function closeSheet(){
+  $('sheet').classList.remove('open'); $('coList').classList.remove('open'); syncBackdrop();
+}
+function openMenu(){ $('menuSheet').classList.add('open'); syncBackdrop(); }
+function closeMenu(){ $('menuSheet').classList.remove('open'); syncBackdrop(); }
+
+/* ================================================================
+   Case form
+   ================================================================ */
 function setCat(k){
   cat=k;
   document.querySelectorAll('#catSeg button').forEach(b=>b.classList.toggle('on',b.dataset.cat===k));
-  $('grpCompany').style.display = k==='company'?'block':'none';
-  $('grpIntl').style.display = k==='international'?'block':'none';
-  $('grpCash').style.display = k==='cash'?'block':'none';
-  $('grpDom2').style.display = k==='international'?'none':'block';
+  $('grpCompany').style.display=k==='company'?'block':'none';
+  $('grpIntl').style.display=k==='international'?'block':'none';
+  $('grpCash').style.display=k==='cash'?'block':'none';
+  $('grpDom2').style.display=k==='international'?'none':'block';
 }
-document.querySelectorAll('#catSeg button').forEach(b=>b.onclick=()=>setCat(b.dataset.cat));
 
 function companyNames(){return Object.keys(ents).sort();}
 function masterCompanies(){
@@ -814,12 +1185,12 @@ function masterCompanies(){
   return m;
 }
 function renderCoList(filter){
-  const box=$('coList'); const f=(filter||'').toLowerCase();
+  const box=$('coList'), f=(filter||'').toLowerCase();
   const m=masterCompanies();
   const matches=Object.keys(m).sort().filter(a=>m[a].toLowerCase().includes(f));
   let h=matches.map(a=>`<div class="coopt" data-co="${esc(a)}">${esc(m[a])}</div>`).join('');
-  if(filter && !matches.some(a=>a.toLowerCase()===f))
-    h+=`<div class="coopt addnew" data-add="${esc(filter)}">➕ Add "${esc(filter)}" as new company</div>`;
+  if(filter&&!matches.some(a=>a.toLowerCase()===f))
+    h+=`<div class="coopt addnew" data-add="${esc(filter)}">+ Add “${esc(filter)}” as new company</div>`;
   box.innerHTML=h||'<div class="coopt" style="color:var(--muted)">No companies yet — type a name to add</div>';
   box.classList.add('open');
   box.querySelectorAll('.coopt').forEach(o=>{
@@ -827,18 +1198,13 @@ function renderCoList(filter){
       if(o.dataset.add!==undefined){
         const nn=o.dataset.add.trim().toUpperCase();
         const dup=Object.keys(cos).concat(Object.keys(ents)).find(k=>k.toLowerCase()===nn.toLowerCase());
-        if(dup){ $('fCoSel').value=dup; }
-        else if(nn){ cos[nn]={name:'',emp:'Y',ipd:'',opd:''}; saveCos(); $('fCoSel').value=nn; toast(nn+' added — fill its details in Companies & offers'); }
-      } else $('fCoSel').value=o.dataset.co;
+        if(dup){$('fCoSel').value=dup;}
+        else if(nn){cos[nn]={name:'',emp:'Y',ipd:'',opd:''};saveCos();$('fCoSel').value=nn;toast(nn+' added — fill its details in Companies & offers');}
+      }else $('fCoSel').value=o.dataset.co;
       box.classList.remove('open');
     };
   });
 }
-$('fCoSel').addEventListener('input',e=>renderCoList(e.target.value));
-$('fCoSel').addEventListener('focus',e=>renderCoList(e.target.value));
-document.addEventListener('click',e=>{
-  if(!e.target.closest('.codrop')) $('coList').classList.remove('open');
-});
 
 function openSheet(){
   editId=null; setCat('company');
@@ -848,12 +1214,11 @@ function openSheet(){
   $('fDt').value=iso(today()); $('fDy').value=1;
   $('fDtI').value=iso(today());
   $('fTmI').value=new Date().toTimeString().slice(0,5);
-  $('sheet').classList.add('open');$('sheetbg').classList.add('open');
+  $('sheet').classList.add('open'); syncBackdrop();
 }
-function closeSheet(){$('sheet').classList.remove('open');if(!$('dsheet').classList.contains('open'))$('sheetbg').classList.remove('open');$('coList').classList.remove('open');}
 
-window.editCase=id=>{
-  const c=cases.find(x=>x.id===id); if(!c)return;
+function editCase(id){
+  const c=byId(id); if(!c)return;
   editId=id; setCat(c.cat||'company');
   $('sheetTitle').textContent='Edit case';
   $('btnSave').textContent='Save changes';
@@ -863,52 +1228,48 @@ window.editCase=id=>{
   $('fRegC').value=(c.cat==='cash')?(c.regId||''):'';
   $('fDt').value=c.sent||iso(today()); $('fDy').value=c.days||''; $('fAd').value=c.apprDays||''; $('fEm').value=c.email||'';
   if(c.admitTs){const d=new Date(c.admitTs);$('fDtI').value=iso(d);$('fTmI').value=d.toTimeString().slice(0,5);}
-  $('sheet').classList.add('open');$('sheetbg').classList.add('open');
-};
+  $('sheet').classList.add('open'); syncBackdrop();
+}
 
-$('fabAdd').onclick=openSheet;
-$('btnCancel').onclick=closeSheet;
-$('sheetbg').onclick=()=>{closeSheet(); closeDsheet();};
-
-$('btnSave').onclick=()=>{
+function saveCase(){
   const nm=$('fNm').value.trim(), dr=$('fDr').value.trim();
-  if(!nm){toast('Enter patient name');return;}
-  if(!dr){toast('Enter treating doctor');return;}
-  let f={name:nm,dr:dr,phone:$('fPh').value.trim(),notes:$('fNo').value.trim(),cat:cat};
+  if(!nm){toast('Enter patient name','warn');return;}
+  if(!dr){toast('Enter treating doctor','warn');return;}
+  const f={name:nm,dr:dr,phone:$('fPh').value.trim(),notes:$('fNo').value.trim(),cat:cat};
   let newStatus='pending';
 
   if(cat==='company'){
     const emp=$('fEmp').value.trim(), reg=$('fReg').value.trim(), co=$('fCoSel').value.trim();
-    if(!emp){toast('Enter Emp ID');return;}
-    if(!reg){toast('Enter Reg ID');return;}
-    if(!co){toast('Select the company');return;}
-    if(!Object.keys(cos).concat(Object.keys(ents)).some(k=>k.toLowerCase()===co.toLowerCase())){toast('Pick the company from the dropdown (or add it)');return;}
+    if(!emp){toast('Enter Emp ID','warn');return;}
+    if(!reg){toast('Enter Reg ID','warn');return;}
+    if(!co){toast('Select the company','warn');return;}
+    if(!Object.keys(cos).concat(Object.keys(ents)).some(k=>k.toLowerCase()===co.toLowerCase())){toast('Pick the company from the dropdown (or add it)','warn');return;}
     const dt=$('fDt').value, dy=parseInt($('fDy').value,10)||null;
     const ad=parseInt($('fAd').value,10)||null;
-    if(!dt){toast('Enter date of admission');return;}
+    if(!dt){toast('Enter date of admission','warn');return;}
     Object.assign(f,{emp:emp,regId:reg,co:co,sent:dt,days:dy,apprDays:ad,email:$('fEm').value.trim()});
   }
   else if(cat==='international'){
     const reg=$('fRegI').value.trim(), ward=$('fWard').value.trim(), dt=$('fDtI').value, tm=$('fTmI').value;
-    if(!reg){toast('Enter Reg No');return;}
-    if(!ward){toast('Enter where the patient is admitted');return;}
-    if(!dt||!tm){toast('Enter admission date and time');return;}
+    if(!reg){toast('Enter Reg No','warn');return;}
+    if(!ward){toast('Enter where the patient is admitted','warn');return;}
+    if(!dt||!tm){toast('Enter admission date and time','warn');return;}
     Object.assign(f,{regId:reg,ward:ward,country:$('fCty').value.trim(),admitTs:new Date(dt+'T'+tm).toISOString()});
   }
   else{
     const dt=$('fDt').value;
-    if(!dt){toast('Enter date of admission');return;}
+    if(!dt){toast('Enter date of admission','warn');return;}
     Object.assign(f,{regId:$('fRegC').value.trim(),sent:dt});
     newStatus='open';
   }
 
   if(editId){
-    const c=cases.find(x=>x.id===editId);
+    const c=byId(editId);
     if(c){
       const wasApproved=(c.status==='approved');
       Object.assign(c,f);
-      if(wasApproved&&c.cat==='company'&&c.apprDays&&!c.validTill) c.validTill=addDays(c.sent,c.apprDays);
-      if(wasApproved&&c.cat==='company'&&c.apprDays&&c.validTill&&daysSince(c.sent)>=0&&new Date(c.validTill)<new Date(c.sent)) c.validTill=addDays(c.sent,c.apprDays);
+      if(wasApproved&&c.cat==='company'&&c.apprDays&&!c.validTill)c.validTill=addDays(c.sent,c.apprDays);
+      if(wasApproved&&c.cat==='company'&&c.apprDays&&c.validTill&&daysSince(c.sent)>=0&&new Date(c.validTill)<new Date(c.sent))c.validTill=addDays(c.sent,c.apprDays);
     }
     toast('Case updated');
   }else{
@@ -916,64 +1277,65 @@ $('btnSave').onclick=()=>{
     toast(cat==='international'?'Saved — C-Form 24h clock started':cat==='cash'?'Saved to Open':'Case saved');
   }
   editId=null; saveCases(); closeSheet();
-  tab = (f.cat==='international')?'international':(f.cat==='cash')?'open':'domestic';
-  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===tab));
-  render(); checkNotify();
-};
+  setTab(f.cat==='international'?'international':f.cat==='cash'?'open':'domestic');
+  checkNotify();
+}
 
-/* ---------- entitlements ---------- */
-window.openEnts=()=>{ $('entPanel').classList.add('open'); renderEnts(); };
-window.closeEnts=()=>{ $('entPanel').classList.remove('open'); };
-$('entSrch').oninput=()=>renderEnts();
+/* ================================================================
+   Entitlements panel
+   ================================================================ */
+function openEnts(){ $('entPanel').classList.add('open'); renderEnts(); }
+function closeEnts(){ $('entPanel').classList.remove('open'); }
 
 function renderEnts(){
   const q=($('entSrch').value||'').toLowerCase();
   const L=$('entList'); L.innerHTML='';
   companyNames().filter(n=>n.toLowerCase().includes(q)).forEach(n=>{
     const d=document.createElement('div'); d.className='ecard';
-    d.innerHTML=`<div class="ehead">${esc(n)}<span>▾</span></div>
-      <div class="ebody">
+    d.innerHTML=`<button class="ehead"><span>${esc(n)}</span>${IC.chev}</button>
+      <div class="ereveal"><div class="ebody"><div class="ebody-in">
         <div class="lines">${esc(ents[n]||'No entitlement details yet.')}</div>
-        <div class="eacts">
-          <button class="btn" onclick="editEnt('${esc(n)}',this)">Edit</button>
-        </div>
-      </div>`;
+        <div class="eacts"><button class="btn" data-e="edit">Edit</button></div>
+      </div></div></div>`;
     d.querySelector('.ehead').onclick=()=>d.classList.toggle('open');
+    d.querySelector('[data-e="edit"]').onclick=()=>editEnt(n,d);
     L.appendChild(d);
   });
-  if(!L.children.length) L.innerHTML='<div class="empty">No company found. Use + Add company.</div>';
+  if(!L.children.length)L.innerHTML=emptyState(IC.search,'No company found','Use + Add company to create one.');
 }
-window.editEnt=(name,btn)=>{
-  const body=btn.closest('.ebody');
-  body.innerHTML=`<textarea id="entTa">${esc(ents[name]||'')}</textarea>
+function editEnt(name,card){
+  const box=card.querySelector('.ebody-in');
+  box.innerHTML=`<textarea class="e-ta"></textarea>
     <div class="eacts">
-      <button class="btn pri" onclick="saveEnt('${esc(name)}')">Save</button>
-      <button class="btn" onclick="renderEnts()">Cancel</button>
-      <button class="btn del" onclick="delEnt('${esc(name)}')">✕ Delete</button>
+      <button class="btn pri" data-e="save">Save</button>
+      <button class="btn" data-e="cancel">Cancel</button>
+      <button class="btn danger" data-e="del">Delete</button>
     </div>`;
-};
-window.saveEnt=name=>{
-  ents[name]=$('entTa').value.trim(); saveEnts(); renderEnts(); toast('Entitlement updated');
-};
-window.delEnt=name=>{
-  if(!confirm('Remove '+name+' and its entitlement?'))return;
-  delete ents[name]; saveEnts(); renderEnts();
-};
-window.addCompany=()=>{
-  const n=prompt('Company name:'); if(!n)return;
+  box.querySelector('.e-ta').value=ents[name]||'';
+  box.querySelector('[data-e="save"]').onclick=()=>{
+    ents[name]=box.querySelector('.e-ta').value.trim(); saveEnts(); renderEnts(); toast('Entitlement updated');
+  };
+  box.querySelector('[data-e="cancel"]').onclick=()=>renderEnts();
+  box.querySelector('[data-e="del"]').onclick=async()=>{
+    const ok=await uiConfirm({title:'Remove '+name+'?',message:'This removes '+name+' and its entitlement details.',okText:'Remove',danger:true});
+    if(!ok)return;
+    delete ents[name]; saveEnts(); renderEnts(); toast(name+' removed');
+  };
+}
+async function addCompany(){
+  const n=await uiPrompt({title:'Add company',message:'Enter the company name.',placeholder:'Company name',okText:'Add'});
+  if(!n)return;
   const key=n.trim().toUpperCase(); if(!key)return;
-  if(Object.keys(ents).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists');return;}
+  if(Object.keys(ents).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists','warn');return;}
   ents[key]=''; saveEnts(); renderEnts();
   toast(key+' added — tap it to enter the entitlement');
-};
+}
 
-
-/* ---------- reference menu + companies panel ---------- */
-window.openMenu=()=>{ $('menuSheet').classList.add('open'); $('sheetbg').classList.add('open'); };
-window.closeMenu=()=>{ $('menuSheet').classList.remove('open'); if(!$('sheet').classList.contains('open')&&!$('dsheet').classList.contains('open'))$('sheetbg').classList.remove('open'); };
-window.openCos=()=>{ $('coPanel').classList.add('open'); renderCos(); };
-window.closeCos=()=>{ $('coPanel').classList.remove('open'); };
-$('coSrchP').oninput=()=>renderCos();
+/* ================================================================
+   Companies panel
+   ================================================================ */
+function openCos(){ $('coPanel').classList.add('open'); renderCos(); }
+function closeCos(){ $('coPanel').classList.remove('open'); }
 
 function renderCos(){
   const q=($('coSrchP').value||'').toLowerCase();
@@ -981,56 +1343,130 @@ function renderCos(){
   Object.keys(cos).sort().filter(a=>(a+' '+(cos[a].name||'')).toLowerCase().includes(q)).forEach(a=>{
     const c=cos[a];
     const d=document.createElement('div'); d.className='ecard';
-    d.innerHTML=`<div class="ehead">${esc(a)}<span style="font-weight:600;color:var(--muted);font-size:12px;">${esc(c.emp||'')}</span></div>
-      <div class="ebody">
+    d.innerHTML=`<button class="ehead"><span>${esc(a)}</span><span class="esub">${esc(c.emp||'')}</span>${IC.chev}</button>
+      <div class="ereveal"><div class="ebody"><div class="ebody-in">
         <div class="lines"><b>${esc(c.name||'')}</b>\nEmpanelled: ${esc(c.emp||'-')}\n\nIPD: ${esc(c.ipd||'-')}\n\nOPD: ${esc(c.opd||'-')}</div>
-        <div class="eacts"><button class="btn" onclick="editCo('${esc(a)}',this)">Edit</button></div>
-      </div>`;
+        <div class="eacts"><button class="btn" data-e="edit">Edit</button></div>
+      </div></div></div>`;
     d.querySelector('.ehead').onclick=()=>d.classList.toggle('open');
+    d.querySelector('[data-e="edit"]').onclick=()=>editCo(a,d);
     L.appendChild(d);
   });
-  if(!L.children.length) L.innerHTML='<div class="empty">No company found. Use + Add.</div>';
+  if(!L.children.length)L.innerHTML=emptyState(IC.search,'No company found','Use + Add to create one.');
 }
-window.editCo=(acr,btn)=>{
+function editCo(acr,card){
   const c=cos[acr]||{};
-  const body=btn.closest('.ebody');
-  body.innerHTML=`
-    <div class="fld" style="margin-top:8px;"><label>Full name</label><input id="coNm" value="${esc(c.name||'')}"></div>
-    <div class="fld"><label>Empanelled (Y / N / Check)</label><input id="coEm" value="${esc(c.emp||'')}"></div>
-    <div class="fld"><label>What we offer — IPD</label><textarea id="coIp">${esc(c.ipd||'')}</textarea></div>
-    <div class="fld"><label>What we offer — OPD</label><textarea id="coOp">${esc(c.opd||'')}</textarea></div>
+  const box=card.querySelector('.ebody-in');
+  box.innerHTML=`
+    <div class="fld" style="margin-top:8px;"><label>Full name</label><input class="co-nm"></div>
+    <div class="fld"><label>Empanelled (Y / N / Check)</label><input class="co-em"></div>
+    <div class="fld"><label>What we offer — IPD</label><textarea class="co-ip"></textarea></div>
+    <div class="fld"><label>What we offer — OPD</label><textarea class="co-op"></textarea></div>
     <div class="eacts">
-      <button class="btn pri" onclick="saveCo('${esc(acr)}')">Save</button>
-      <button class="btn" onclick="renderCos()">Cancel</button>
-      <button class="btn del" onclick="delCo('${esc(acr)}')">✕ Delete</button>
+      <button class="btn pri" data-e="save">Save</button>
+      <button class="btn" data-e="cancel">Cancel</button>
+      <button class="btn danger" data-e="del">Delete</button>
     </div>`;
-};
-window.saveCo=acr=>{
-  cos[acr]={name:$('coNm').value.trim(),emp:$('coEm').value.trim(),ipd:$('coIp').value.trim(),opd:$('coOp').value.trim()};
-  saveCos(); renderCos(); toast(acr+' updated');
-};
-window.delCo=acr=>{
-  if(!confirm('Remove '+acr+' from the list?'))return;
-  delete cos[acr]; saveCos(); renderCos();
-};
-window.addCo=()=>{
-  const n=prompt('Company acronym (e.g. NTPC):'); if(!n)return;
+  box.querySelector('.co-nm').value=c.name||'';
+  box.querySelector('.co-em').value=c.emp||'';
+  box.querySelector('.co-ip').value=c.ipd||'';
+  box.querySelector('.co-op').value=c.opd||'';
+  box.querySelector('[data-e="save"]').onclick=()=>{
+    cos[acr]={
+      name:box.querySelector('.co-nm').value.trim(),
+      emp:box.querySelector('.co-em').value.trim(),
+      ipd:box.querySelector('.co-ip').value.trim(),
+      opd:box.querySelector('.co-op').value.trim()
+    };
+    saveCos(); renderCos(); toast(acr+' updated');
+  };
+  box.querySelector('[data-e="cancel"]').onclick=()=>renderCos();
+  box.querySelector('[data-e="del"]').onclick=async()=>{
+    const ok=await uiConfirm({title:'Remove '+acr+'?',message:'This removes '+acr+' from the companies list.',okText:'Remove',danger:true});
+    if(!ok)return;
+    delete cos[acr]; saveCos(); renderCos(); toast(acr+' removed');
+  };
+}
+async function addCo(){
+  const n=await uiPrompt({title:'Add company',message:'Enter the company acronym.',placeholder:'e.g. NTPC',okText:'Add'});
+  if(!n)return;
   const key=n.trim().toUpperCase(); if(!key)return;
-  if(Object.keys(cos).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists');return;}
+  if(Object.keys(cos).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists','warn');return;}
   cos[key]={name:'',emp:'Y',ipd:'',opd:''}; saveCos(); renderCos();
   toast(key+' added — tap it and Edit to fill details');
-};
+}
 
-/* ---------- misc ---------- */
-$('srch').oninput=e=>{query=e.target.value.trim(); render();};
-document.querySelectorAll('.tab').forEach(t=>{
-  t.onclick=()=>{tab=t.dataset.tab;
-    document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
-    render();};
-});
+/* ================================================================
+   Tabs, search, wiring, init
+   ================================================================ */
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));
+  render();
+}
 
-load();
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('./sw.js').catch(function(){}); }
+function init(){
+  /* main UI */
+  $('fabAdd').onclick=openSheet;
+  $('btnCancel').onclick=closeSheet;
+  $('btnSave').onclick=saveCase;
+  $('btnRef').onclick=openMenu;
+  $('srch').oninput=e=>{query=e.target.value.trim();render();};
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>setTab(t.dataset.tab));
+  document.querySelectorAll('#catSeg button').forEach(b=>b.onclick=()=>setCat(b.dataset.cat));
+
+  /* case-card actions (delegation) */
+  $('list').addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]'); if(!b)return;
+    const fn=ACTIONS[b.dataset.act]; if(fn)fn(b.dataset.id);
+  });
+
+  /* backdrop closes every open sheet */
+  $('sheetbg').onclick=()=>{closeSheet();closeDsheet();closeMenu();};
+
+  /* discharge sheet */
+  $('dCancel').onclick=closeDsheet;
+  $('dConfirm').onclick=saveDischarge;
+
+  /* reference menu + panels */
+  $('miEnts').onclick=()=>{closeMenu();openEnts();};
+  $('miCos').onclick=()=>{closeMenu();openCos();};
+  $('entBack').onclick=closeEnts;
+  $('coBack').onclick=closeCos;
+  $('entAdd').onclick=addCompany;
+  $('coAdd').onclick=addCo;
+  $('entSrch').oninput=renderEnts;
+  $('coSrchP').oninput=renderCos;
+
+  /* company dropdown */
+  $('fCoSel').addEventListener('input',e=>renderCoList(e.target.value));
+  $('fCoSel').addEventListener('focus',e=>renderCoList(e.target.value));
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.codrop'))$('coList').classList.remove('open');
+  });
+
+  /* dialog */
+  $('dlgOk').onclick=()=>dlgClose(dlgHasInput?$('dlgInput').value:true);
+  $('dlgCancel').onclick=()=>dlgClose(dlgHasInput?null:false);
+  $('dlgBg').onclick=()=>dlgClose(dlgHasInput?null:false);
+  $('dlgInput').addEventListener('keydown',e=>{if(e.key==='Enter')dlgClose($('dlgInput').value);});
+
+  /* escape closes the top-most layer */
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='Escape')return;
+    if($('dlgBox').classList.contains('open')){dlgClose(dlgHasInput?null:false);return;}
+    if($('coPanel').classList.contains('open')){closeCos();return;}
+    if($('entPanel').classList.contains('open')){closeEnts();return;}
+    closeSheet();closeDsheet();closeMenu();
+  });
+
+  /* periodic urgency refresh */
+  setInterval(()=>{checkNotify();if(tab==='international')render();},60000);
+
+  load();
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
+}
+init();
 </script>
 </body>
 </html>

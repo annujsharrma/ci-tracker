@@ -1,4 +1,4 @@
-const CACHE = 'ci-tracker-v6';
+const CACHE = 'ci-tracker-v7';
 const FILES = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
