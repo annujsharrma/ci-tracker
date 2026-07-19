@@ -341,6 +341,39 @@ a{-webkit-tap-highlight-color:transparent}
 .toast .dot{width:8px;height:8px;border-radius:50%;background:#4CAF87;flex-shrink:0}
 .toast.warn .dot{background:#E2A33C}
 .toast.danger .dot{background:#E5776A}
+
+/* ================================================================
+   Login overlay
+   ================================================================ */
+.login{
+  position:fixed;inset:0;z-index:70;
+  background:linear-gradient(160deg,#1E4437 0%,#16302B 55%,#11251F 100%);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+  opacity:0;pointer-events:none;transition:opacity var(--t-med) ease;
+}
+.login.show{opacity:1;pointer-events:auto}
+.login-card{
+  width:100%;max-width:360px;background:var(--surface);border-radius:var(--r-xl);
+  padding:28px 24px calc(24px + var(--safe-b));box-shadow:var(--sh-lg);text-align:center;
+  animation:cardIn .3s var(--ease) backwards;
+}
+.login-logo{width:60px;height:60px;border-radius:16px;box-shadow:var(--sh-md);margin-bottom:14px}
+.login-card h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.login-sub{font-size:13.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+#loginForm{margin-top:20px;text-align:left}
+.login-btn{width:100%;min-height:50px;font-size:15px;margin-top:4px}
+.login-err{
+  font-size:13px;font-weight:600;color:var(--danger);background:var(--danger-soft);
+  border-radius:var(--r-sm);padding:10px 12px;margin-bottom:12px;line-height:1.45;
+}
+.login-note{font-size:12px;color:var(--faint);margin-top:16px}
+
+/* account block in the reference menu */
+.acct{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.acct-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
+.acct-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 0 3px var(--accent-soft)}
+.acct-email{font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acct .btn{min-height:44px}
 </style>
 </head>
 <body>
@@ -476,6 +509,10 @@ a{-webkit-tap-highlight-color:transparent}
     Companies &amp; what we offer (IPD/OPD)
     <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
   </button>
+  <div class="acct" id="acctBox" hidden>
+    <div class="acct-row"><span class="acct-dot"></span><span class="acct-email" id="acctEmail"></span></div>
+    <button class="btn" id="btnSignOut">Sign out</button>
+  </div>
 </div>
 
 <!-- Companies panel -->
@@ -530,8 +567,29 @@ a{-webkit-tap-highlight-color:transparent}
   </div>
 </div>
 
+<!-- Login overlay -->
+<div class="login show" id="loginOverlay">
+  <div class="login-card">
+    <img src="icon-192.png" alt="" class="login-logo">
+    <h2>MediTrack</h2>
+    <p class="login-sub">Sign in to sync your desk across devices.</p>
+    <form id="loginForm" autocomplete="on">
+      <div class="fld"><label for="liEmail">Email</label><input id="liEmail" type="email" inputmode="email" autocomplete="username" placeholder="you@example.com"></div>
+      <div class="fld"><label for="liPass">Password</label><input id="liPass" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+      <div class="login-err" id="liError" hidden></div>
+      <button class="btn pri login-btn" id="liBtn" type="submit">Sign in</button>
+    </form>
+    <p class="login-note">Accounts are created by the desk admin.</p>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast" role="status"><span class="dot"></span><span id="toastMsg"></span></div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <script>
 'use strict';
@@ -738,6 +796,138 @@ const uiConfirm=opts=>dlgOpen(opts);                                    // resol
 const uiPrompt=opts=>dlgOpen({...opts,input:{placeholder:opts.placeholder||''}}); // resolves string / null
 
 /* ================================================================
+   Firebase cloud sync
+   ----------------------------------------------------------------
+   Model: the whole workspace (cases + ents + cos) lives in one
+   Firestore document (workspace/main), shared by every signed-in
+   desk user. localStorage stays as an instant-paint / offline mirror.
+   Firestore offline persistence keeps writes queued when offline and
+   syncs them on reconnect.
+   ================================================================ */
+const firebaseConfig={
+  apiKey:"AIzaSyDlWCR9OHLWArMBiX9XRrulQlwWmKL9CRU",
+  authDomain:"meditrack-14e82.firebaseapp.com",
+  projectId:"meditrack-14e82",
+  storageBucket:"meditrack-14e82.firebasestorage.app",
+  messagingSenderId:"537105176279",
+  appId:"1:537105176279:web:ecb7aa45dc2fab02cf8292"
+};
+let auth=null, db=null, docRef=null, cloudUnsub=null, pushTimer=null, cloudOn=false;
+
+function fbInit(){
+  if(typeof firebase==='undefined'||!firebase.initializeApp)return false;
+  try{
+    firebase.initializeApp(firebaseConfig);
+    auth=firebase.auth();
+    db=firebase.firestore();
+    db.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // offline cache; ok if it fails
+    docRef=db.collection('workspace').doc('main');
+    return true;
+  }catch(e){return false;}
+}
+
+/* push the whole workspace (debounced; JSON-clean drops undefined for Firestore) */
+function queuePush(){
+  if(!docRef||!auth||!auth.currentUser)return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(()=>{
+    try{docRef.set(JSON.parse(JSON.stringify({cases,ents,cos})));}catch(e){}
+  },400);
+}
+
+/* adopt a cloud snapshot into memory + local mirror, then repaint */
+function applyCloud(d){
+  if(Array.isArray(d.cases))cases=d.cases;
+  if(d.ents&&typeof d.ents==='object')ents=d.ents;
+  if(d.cos&&typeof d.cos==='object')cos=d.cos;
+  try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){}
+  try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){}
+  try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){}
+  render(); checkNotify();
+}
+
+/* one-time-per-device merge of this device's local data into the cloud.
+   Union-by-id means the first device's existing cases are never lost, and
+   later devices don't create duplicates. Needs connectivity (transaction). */
+async function bootstrapCloud(){
+  const FLAG='ci_cloud_boot_'+firebaseConfig.projectId;
+  if(localStorage.getItem(FLAG))return;
+  try{
+    await db.runTransaction(async t=>{
+      const snap=await t.get(docRef);
+      const cloud=snap.exists?(snap.data()||{}):{};
+      const cCases=Array.isArray(cloud.cases)?cloud.cases:[];
+      const ids=new Set(cCases.map(c=>c.id));
+      const out={
+        cases:cCases.concat(cases.filter(c=>!ids.has(c.id))),
+        ents:(cloud.ents&&Object.keys(cloud.ents).length)?cloud.ents:ents,
+        cos:(cloud.cos&&Object.keys(cloud.cos).length)?cloud.cos:cos
+      };
+      t.set(docRef,JSON.parse(JSON.stringify(out)));
+    });
+    localStorage.setItem(FLAG,'1');
+  }catch(e){/* offline — retries next online session (flag stays unset) */}
+}
+
+function startCloud(){
+  if(cloudOn)return; cloudOn=true;
+  bootstrapCloud();
+  cloudUnsub=docRef.onSnapshot(
+    snap=>{ if(snap.exists)applyCloud(snap.data()||{}); },
+    err=>{/* transient offline / permission errors — local mirror stays */}
+  );
+}
+function stopCloud(){
+  if(cloudUnsub){cloudUnsub();cloudUnsub=null;}
+  cloudOn=false;
+}
+
+/* ---- auth ---- */
+function friendlyAuthErr(e){
+  const c=(e&&e.code)||'';
+  if(/invalid-credential|wrong-password|user-not-found/.test(c))return 'Email or password is incorrect.';
+  if(c.includes('invalid-email'))return 'That doesn’t look like a valid email.';
+  if(c.includes('too-many-requests'))return 'Too many attempts — try again in a few minutes.';
+  if(c.includes('user-disabled'))return 'This account has been disabled.';
+  if(c.includes('network'))return 'No connection — check your internet.';
+  return 'Couldn’t sign in. Please try again.';
+}
+function liError(msg){
+  const el=$('liError');
+  if(!msg){el.hidden=true;return;}
+  el.textContent=msg; el.hidden=false;
+}
+async function doLogin(e){
+  if(e)e.preventDefault();
+  const email=$('liEmail').value.trim(), pass=$('liPass').value;
+  liError('');
+  if(!email||!pass){liError('Enter your email and password.');return;}
+  const btn=$('liBtn'); btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    await auth.signInWithEmailAndPassword(email,pass);
+  }catch(err){
+    liError(friendlyAuthErr(err));
+  }finally{
+    btn.disabled=false; btn.textContent='Sign in';
+  }
+}
+function startAuthFlow(){
+  auth.onAuthStateChanged(user=>{
+    if(user){
+      $('loginOverlay').classList.remove('show');
+      $('liPass').value='';
+      $('acctBox').hidden=false;
+      $('acctEmail').textContent=user.email||'Signed in';
+      startCloud();
+    }else{
+      stopCloud();
+      $('acctBox').hidden=true;
+      $('loginOverlay').classList.add('show');
+    }
+  });
+}
+
+/* ================================================================
    Storage
    ================================================================ */
 function load(){
@@ -764,9 +954,9 @@ function load(){
   render(); checkNotify();
 }
 const SAVE_ERR='Couldn’t save — device storage may be full.';
-function saveCases(){try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){toast(SAVE_ERR,'danger');}}
-function saveEnts(){try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){toast(SAVE_ERR,'danger');}}
-function saveCos(){try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){toast(SAVE_ERR,'danger');}}
+function saveCases(){try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){toast(SAVE_ERR,'danger');}queuePush();}
+function saveEnts(){try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){toast(SAVE_ERR,'danger');}queuePush();}
+function saveCos(){try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){toast(SAVE_ERR,'danger');}queuePush();}
 
 /* ================================================================
    Status model
@@ -1484,10 +1674,23 @@ function init(){
     closeSheet();closeDsheet();closeMenu();
   });
 
+  /* sign in / out */
+  $('loginForm').addEventListener('submit',doLogin);
+  $('btnSignOut').onclick=()=>{closeMenu();if(auth)auth.signOut();};
+
   /* periodic urgency refresh */
   setInterval(()=>{checkNotify();if(tab==='international')render();},60000);
 
-  load();
+  load();  // instant local-first paint from the localStorage mirror
+
+  if(fbInit()){
+    startAuthFlow();          // resumes a saved session + syncs, or shows the login screen
+  }else{
+    // Firebase SDK unavailable (e.g. offline first-ever run) — run local-only
+    $('loginOverlay').classList.remove('show');
+    $('acctBox').hidden=true;
+  }
+
   if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
 }
 init();
