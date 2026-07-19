@@ -782,7 +782,9 @@ function dlgOpen({title,message,okText='Confirm',cancelText='Cancel',danger=fals
   dlgHasInput=!!input;
   $('dlgFld').hidden=!input;
   const inp=$('dlgInput');
-  inp.value=''; inp.placeholder=(input&&input.placeholder)||'';
+  inp.value=(input&&input.value)||'';
+  inp.placeholder=(input&&input.placeholder)||'';
+  inp.inputMode=(input&&input.inputmode)||'text';
   $('dlgOk').textContent=okText;
   $('dlgCancel').textContent=cancelText;
   $('dlgOk').classList.toggle('dangerpri',!!danger);
@@ -799,7 +801,7 @@ function dlgClose(val){
   if(r)r(val);
 }
 const uiConfirm=opts=>dlgOpen(opts);                                    // resolves true / false
-const uiPrompt=opts=>dlgOpen({...opts,input:{placeholder:opts.placeholder||''}}); // resolves string / null
+const uiPrompt=opts=>dlgOpen({...opts,input:{placeholder:opts.placeholder||'',value:opts.value||'',inputmode:opts.inputmode||'text'}}); // resolves string / null
 
 /* ================================================================
    Firebase cloud sync
@@ -828,6 +830,9 @@ function fbInit(){
     // keep the session on this device so re-login isn't needed on every open
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(()=>{});
     db=firebase.firestore();
+    // Auto-detect long-polling so real-time updates work on networks/proxies that
+    // block Firestore's default streaming connection (common on office/hospital Wi-Fi).
+    try{db.settings({experimentalAutoDetectLongPolling:true});}catch(e){}
     db.enablePersistence({synchronizeTabs:true}).catch(()=>{}); // offline cache; ok if it fails
     docRef=db.collection('workspace').doc('main');
     return true;
@@ -1226,11 +1231,23 @@ function approveCase(id){
   saveCases(); render();
   toast('Approved — moved to Open, valid till '+fmt(c.validTill));
 }
-function extendCase(id){
+async function extendCase(id){
   const c=byId(id); if(!c)return;
-  c.validTill=addDays(c.validTill||iso(today()),c.apprDays||7);
+  const from=c.validTill||iso(today());
+  const ans=await uiPrompt({
+    title:'Extension approved',
+    message:'How many days were approved? They’ll be added to the current approval ('+fmt(from)+').',
+    placeholder:'e.g. 7',
+    value:c.apprDays?String(c.apprDays):'',
+    inputmode:'numeric',
+    okText:'Add days'
+  });
+  if(ans===null)return;                       // cancelled
+  const n=parseInt(ans,10);
+  if(!n||n<1){toast('Enter a valid number of days','warn');return;}
+  c.validTill=addDays(from,n);
   saveCases(); render();
-  toast('Extension approved — valid till '+fmt(c.validTill));
+  toast('Extension approved — +'+n+' day'+(n===1?'':'s')+', valid till '+fmt(c.validTill));
 }
 function cformDone(id){
   const c=byId(id); if(!c)return;
@@ -1711,6 +1728,9 @@ function init(){
   /* sign in / out */
   $('loginForm').addEventListener('submit',doLogin);
   $('btnSignOut').onclick=()=>{closeMenu();if(auth)auth.signOut();};
+
+  /* refresh the moment the app returns to the foreground (fresh data + time-based states) */
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){render();checkNotify();} });
 
   /* periodic urgency refresh */
   setInterval(()=>{checkNotify();if(tab==='international')render();},60000);
