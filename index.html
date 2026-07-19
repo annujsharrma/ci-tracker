@@ -341,6 +341,9 @@ a{-webkit-tap-highlight-color:transparent}
 .toast .dot{width:8px;height:8px;border-radius:50%;background:#4CAF87;flex-shrink:0}
 .toast.warn .dot{background:#E2A33C}
 .toast.danger .dot{background:#E5776A}
+.toast-undo{margin-left:6px;flex-shrink:0;background:rgba(255,255,255,.18);color:#fff;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:800;min-height:34px;transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease)}
+.toast-undo:hover{background:rgba(255,255,255,.28)}
+.toast-undo:active{transform:scale(.93)}
 
 /* ================================================================
    Login overlay
@@ -590,7 +593,7 @@ a{-webkit-tap-highlight-color:transparent}
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast" role="status"><span class="dot"></span><span id="toastMsg"></span></div>
+<div class="toast" id="toast" role="status"><span class="dot"></span><span id="toastMsg"></span><button class="toast-undo" id="toastUndo" hidden>Undo</button></div>
 
 <!-- Firebase SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -761,14 +764,32 @@ const IC={
    Toast
    ================================================================ */
 let toastTimer=null;
-function toast(msg,kind){
-  const t=$('toast');
+function toast(msg,kind,action){
+  const t=$('toast'), btn=$('toastUndo');
   $('toastMsg').textContent=msg;
   t.classList.remove('warn','danger');
   if(kind)t.classList.add(kind);
+  if(action){
+    btn.hidden=false; btn.textContent=action.label||'Undo';
+    btn.onclick=()=>{ t.classList.remove('show'); if(action.fn)action.fn(); };
+  }else{ btn.hidden=true; btn.onclick=null; }
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),action?6000:2600);
+}
+
+/* ---- undo: snapshot the case list before an action, restore it if tapped ---- */
+let undoCases=null;
+const snapCases=()=>JSON.parse(JSON.stringify(cases));
+function offerUndo(prev,msg,kind){
+  undoCases=prev;
+  toast(msg,kind,{label:'Undo',fn:runUndo});
+}
+function runUndo(){
+  if(!undoCases)return;
+  cases=undoCases; undoCases=null;
+  saveCases(); render(); checkNotify();
+  toast('Action undone');
 }
 
 /* ================================================================
@@ -1219,17 +1240,19 @@ function makeCard(c,idx){
    ================================================================ */
 function logFU(id){
   const c=byId(id); if(!c)return;
+  const prev=snapCases();
   c.fu=c.fu||[]; c.fu.push(iso(today()));
   const s=today(); s.setDate(s.getDate()+SNOOZE_DAYS); c.snooze=iso(s);
   saveCases(); render();
-  toast('Logged — re-flags on '+fmt(c.snooze)+' if still pending');
+  offerUndo(prev,'Logged — re-flags on '+fmt(c.snooze)+' if still pending');
 }
 function approveCase(id){
   const c=byId(id); if(!c)return;
+  const prev=snapCases();
   c.status='approved';
   c.validTill=addDays(c.sent,c.apprDays||7);
   saveCases(); render();
-  toast('Approved — moved to Open, valid till '+fmt(c.validTill));
+  offerUndo(prev,'Approved — moved to Open, valid till '+fmt(c.validTill));
 }
 async function extendCase(id){
   const c=byId(id); if(!c)return;
@@ -1245,14 +1268,16 @@ async function extendCase(id){
   if(ans===null)return;                       // cancelled
   const n=parseInt(ans,10);
   if(!n||n<1){toast('Enter a valid number of days','warn');return;}
+  const prev=snapCases();
   c.validTill=addDays(from,n);
   saveCases(); render();
-  toast('Extension approved — +'+n+' day'+(n===1?'':'s')+', valid till '+fmt(c.validTill));
+  offerUndo(prev,'Extension approved — +'+n+' day'+(n===1?'':'s')+', valid till '+fmt(c.validTill));
 }
 function cformDone(id){
   const c=byId(id); if(!c)return;
+  const prev=snapCases();
   c.status='cform-done'; saveCases(); render();
-  toast('C-Form filled — patient moved to Open');
+  offerUndo(prev,'C-Form filled — patient moved to Open');
 }
 async function frroDone(id){
   const c=byId(id); if(!c)return;
@@ -1262,8 +1287,9 @@ async function frroDone(id){
     okText:'FRRO done'
   });
   if(!ok)return;
+  const prev=snapCases();
   cases=cases.filter(x=>x.id!==id); saveCases(); render();
-  toast('FRRO done — case closed and removed');
+  offerUndo(prev,'FRRO done — case closed and removed');
 }
 /* kept for parity with the original build (console utility; not wired to UI) */
 window.delCase=async id=>{
@@ -1291,6 +1317,7 @@ function saveDischarge(){
   const c=byId(dischargeId); if(!c){closeDsheet();return;}
   const dt=$('dDt').value, tm=$('dTm').value;
   if(!dt||!tm){toast('Enter discharge date and time','warn');return;}
+  const prev=snapCases();
   if(c.cat==='international'){
     c.status='frro';
     c.dischargeTs=new Date(dt+'T'+tm).toISOString();
@@ -1298,11 +1325,11 @@ function saveDischarge(){
     saveCases(); closeDsheet();
     setTab('international');
     checkNotify();
-    toast('Discharged — FRRO 24h clock started');
+    offerUndo(prev,'Discharged — FRRO 24h clock started');
   }else{
     cases=cases.filter(x=>x.id!==dischargeId);
     saveCases(); closeDsheet(); render();
-    toast('Discharged — case closed and removed');
+    offerUndo(prev,'Discharged — case closed and removed');
   }
 }
 
@@ -1361,13 +1388,16 @@ Warm regards,`;
 }
 function extensionEmail(id){
   const c=byId(id); if(!c)return;
+  const admLine = daysSince(c.sent)<0
+    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmt(c.sent)}`
+    : `has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)}`;
   const subject=`REQUEST FOR EXTENSION OF APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
   const body=
 `Dear Sir/Madam,
 
 I hope this message finds you well.
 
-This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)} under the care of ${drName(c.dr)}.
+This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) ${admLine} under the care of ${drName(c.dr)}.
 
 The last approval is valid till ${c.validTill?fmt(c.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
 
