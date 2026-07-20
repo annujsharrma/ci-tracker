@@ -60,7 +60,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    App shell
    ================================================================ */
-.app{max-width:520px;margin:0 auto;min-height:100dvh;padding-bottom:calc(124px + var(--safe-b));animation:fadeIn .3s ease}
+.app{max-width:520px;margin:0 auto;min-height:100dvh;padding-bottom:calc(124px + var(--safe-b))}
 @keyframes fadeIn{from{opacity:0}}
 
 .hero{
@@ -92,7 +92,8 @@ a{-webkit-tap-highlight-color:transparent}
 
 /* stats — float over the hero edge */
 .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 20px;margin-top:-34px;position:relative;z-index:1}
-.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-md)}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-md);cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform var(--t-fast) var(--ease),box-shadow var(--t-fast) ease}
+.count:active{transform:scale(.96)}
 .count b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
 .count span{display:block;margin-top:3px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .count.late b{color:var(--danger)}
@@ -106,6 +107,7 @@ a{-webkit-tap-highlight-color:transparent}
 .srchbox input{
   width:100%;min-height:46px;border:1px solid var(--line);border-radius:var(--r-full);
   padding:12px 18px 12px 42px;font-size:16px;background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm);
+  -webkit-appearance:none;appearance:none;
   transition:border-color var(--t-fast) ease,box-shadow var(--t-fast) ease;
 }
 .srchbox input::placeholder{color:var(--faint)}
@@ -128,9 +130,10 @@ a{-webkit-tap-highlight-color:transparent}
 .card{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
   padding:16px;margin-bottom:12px;box-shadow:var(--sh-sm);overflow-wrap:anywhere;
-  animation:cardIn .24s var(--ease) backwards;animation-delay:calc(var(--i,0)*30ms);
   transition:box-shadow var(--t-fast) ease;
 }
+/* entry animation only when the view actually changes — silent re-renders don't blink */
+.card.anim{animation:cardIn .24s var(--ease) backwards;animation-delay:calc(var(--i,0)*30ms)}
 @media (hover:hover){.card:hover{box-shadow:var(--sh-md)}}
 @keyframes cardIn{from{opacity:0;transform:translateY(8px)}}
 .card.flag{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset,var(--sh-sm)}
@@ -178,9 +181,10 @@ a{-webkit-tap-highlight-color:transparent}
 
 /* FAB bar (two buttons) */
 .fabbar{
-  position:fixed;bottom:calc(20px + var(--safe-b));left:50%;transform:translateX(-50%);
-  display:flex;gap:10px;z-index:5;max-width:calc(100% - 20px);
+  position:fixed;bottom:calc(20px + var(--safe-b));left:0;right:0;z-index:5;
+  display:flex;justify-content:center;gap:10px;padding:0 12px;pointer-events:none;
 }
+.fabbar .fab{pointer-events:auto}
 .fab{
   flex:0 0 auto;background:linear-gradient(135deg,#1E4A3B,#16302B);color:#fff;border-radius:var(--r-full);
   min-height:52px;padding:0 20px;font-size:15px;font-weight:700;
@@ -918,11 +922,17 @@ function queuePush(){
   },400);
 }
 
-/* adopt a cloud snapshot into memory + local mirror, then repaint */
+/* adopt a cloud snapshot into memory + local mirror, then repaint.
+   Skips entirely when nothing changed, so opening/refreshing the app
+   doesn't blink the list for an identical snapshot. */
 function applyCloud(d){
-  if(Array.isArray(d.cases))cases=d.cases;
-  if(d.ents&&typeof d.ents==='object')ents=d.ents;
-  if(d.cos&&typeof d.cos==='object')cos=d.cos;
+  const next={
+    cases:Array.isArray(d.cases)?d.cases:cases,
+    ents:(d.ents&&typeof d.ents==='object')?d.ents:ents,
+    cos:(d.cos&&typeof d.cos==='object')?d.cos:cos
+  };
+  if(JSON.stringify(next)===JSON.stringify({cases,ents,cos}))return;
+  cases=next.cases; ents=next.ents; cos=next.cos;
   try{localStorage.setItem(CASES_KEY,JSON.stringify(cases));}catch(e){}
   try{localStorage.setItem(ENT_KEY,JSON.stringify(ents));}catch(e){}
   try{localStorage.setItem(CO_KEY,JSON.stringify(cos));}catch(e){}
@@ -1102,11 +1112,29 @@ function emptyState(icon,title,text){
   return `<div class="empty"><div class="ic">${icon}</div><b>${title}</b><p>${text}</p></div>`;
 }
 
+let lastView='';
 function render(){
   let pool;
   if(tab==='domestic') pool=cases.filter(c=>c.cat!=='international'&&c.status==='pending');
   else if(tab==='international') pool=cases.filter(c=>c.cat==='international'&&pendingResp(c));
   else pool=cases.filter(openStat);
+
+  // animate card entry only when the visible view changed (tab/search), never on silent re-renders
+  const view=tab+'|'+query;
+  const animate=view!==lastView;
+  lastView=view;
+
+  // per-tab counts shown on the tab labels
+  const tabCounts={
+    domestic:cases.filter(c=>c.cat!=='international'&&c.status==='pending').length,
+    international:cases.filter(c=>c.cat==='international'&&pendingResp(c)).length,
+    open:cases.filter(openStat).length
+  };
+  document.querySelectorAll('.tab').forEach(b=>{
+    const k=b.dataset.tab;
+    const base=k==='domestic'?'Domestic':k==='international'?'International':'Open';
+    b.textContent=tabCounts[k]?`${base} · ${tabCounts[k]}`:base;
+  });
 
   // Global stat cards — a stable desk overview that does NOT change per tab.
   // Action due = anything urgent; Waiting = awaiting a response (never admitted); Open = admitted.
@@ -1133,7 +1161,7 @@ function render(){
       ? emptyState(IC.checkCircle,'No admitted patients','Approved company, cash, and C-Form-done international patients appear here until discharge.')
       : emptyState(IC.inbox,'No approvals awaited','Tap “New case” below to add a company patient.');
   }
-  show.forEach((c,i)=>L.appendChild(makeCard(c,i)));
+  show.forEach((c,i)=>L.appendChild(makeCard(c,i,animate)));
 
   $('note').textContent=late
     ? '⚠ '+late+' case'+(late===1?'':'s')+' in this tab need'+(late===1?'s':'')+' action now.'
@@ -1152,7 +1180,7 @@ function hourChip(ts,label,st){
 const actBtn=(act,id,label,cls,icon)=>
   `<button class="btn${cls?' '+cls:''}" data-act="${act}" data-id="${id}">${icon||''}${label}</button>`;
 
-function makeCard(c,idx){
+function makeCard(c,idx,anim){
   const st=state(c);
   let chip='', sub='', pills='', actions='';
   const catPill=`<span class="pill cat">${c.cat==='company'?'Company':c.cat==='international'?'International':'Cash'}</span>`;
@@ -1260,8 +1288,8 @@ function makeCard(c,idx){
   }
 
   const d=document.createElement('div');
-  d.className='card'+(st==='late'?' flag':'');
-  d.style.setProperty('--i',Math.min(idx,8));
+  d.className='card'+(anim?' anim':'')+(st==='late'?' flag':'');
+  if(anim)d.style.setProperty('--i',Math.min(idx,8));
   d.innerHTML=`
     <div class="row1">
       <div class="who"><div class="nm">${esc(c.name)}</div><div class="co">${sub}</div></div>
@@ -1982,6 +2010,16 @@ function init(){
   $('btnCancel').onclick=closeSheet;
   $('btnSave').onclick=saveCase;
   $('btnRef').onclick=openMenu;
+
+  /* stat tiles jump to the matching tab */
+  $('cPend').parentElement.onclick=()=>setTab('domestic');
+  $('cOpen').parentElement.onclick=()=>setTab('open');
+  $('cLate').parentElement.onclick=()=>{
+    const domLate=cases.some(c=>c.cat!=='international'&&c.status==='pending'&&state(c)==='late');
+    const intlLate=cases.some(c=>c.cat==='international'&&pendingResp(c)&&state(c)==='late');
+    setTab(domLate?'domestic':intlLate?'international':'open');
+  };
+
   $('fabEmail').onclick=openEmailSheet;
   $('emType').onchange=renderEmailFields;
   $('emCancel').onclick=closeEmailSheet;
