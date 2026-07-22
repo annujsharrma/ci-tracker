@@ -302,8 +302,11 @@ a{-webkit-tap-highlight-color:transparent}
   width:100%;min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:14px;font-size:15px;font-weight:700;text-align:left;color:var(--ink);
 }
-.ehead .esub{font-weight:600;color:var(--muted);font-size:12px;margin-left:auto}
+.ehead .esub{font-weight:600;color:var(--muted);font-size:12px;margin-left:auto;flex-shrink:0}
 .ehead .chev{color:var(--faint);flex-shrink:0;transition:transform var(--t-med) var(--ease)}
+.etitle{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;text-align:left}
+.etitle .eac{font-weight:700;font-size:15px}
+.etitle .enm{font-weight:500;font-size:12.5px;color:var(--muted);line-height:1.3}
 .ecard.open .ehead .chev{transform:rotate(180deg)}
 .ereveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease)}
 .ecard.open .ereveal{grid-template-rows:1fr}
@@ -1884,12 +1887,14 @@ function saveCase(){
 function openEnts(){ $('entPanel').classList.add('open'); renderEnts(); }
 function closeEnts(){ $('entPanel').classList.remove('open'); }
 
+const coFullName=n=>(cos[n]&&cos[n].name)||'';
 function renderEnts(){
   const q=($('entSrch').value||'').toLowerCase();
   const L=$('entList'); L.innerHTML='';
-  companyNames().filter(n=>n.toLowerCase().includes(q)).forEach(n=>{
+  companyNames().filter(n=>(n+' '+coFullName(n)).toLowerCase().includes(q)).forEach(n=>{
     const d=document.createElement('div'); d.className='ecard';
-    d.innerHTML=`<button class="ehead"><span>${esc(n)}</span>${IC.chev}</button>
+    const fn=coFullName(n);
+    d.innerHTML=`<button class="ehead"><span class="etitle"><span class="eac">${esc(n)}</span>${fn?`<span class="enm">${esc(fn)}</span>`:''}</span>${IC.chev}</button>
       <div class="ereveal"><div class="ebody"><div class="ebody-in">
         <div class="lines">${esc(ents[n]||'No entitlement details yet.')}</div>
         <div class="eacts"><button class="btn" data-e="edit">Edit</button></div>
@@ -1940,7 +1945,7 @@ function renderCos(){
   Object.keys(cos).sort().filter(a=>(a+' '+(cos[a].name||'')).toLowerCase().includes(q)).forEach(a=>{
     const c=cos[a];
     const d=document.createElement('div'); d.className='ecard';
-    d.innerHTML=`<button class="ehead"><span>${esc(a)}</span><span class="esub">${esc(c.emp||'')}</span>${IC.chev}</button>
+    d.innerHTML=`<button class="ehead"><span class="etitle"><span class="eac">${esc(a)}</span>${c.name?`<span class="enm">${esc(c.name)}</span>`:''}</span><span class="esub">${esc(c.emp||'')}</span>${IC.chev}</button>
       <div class="ereveal"><div class="ebody"><div class="ebody-in">
         <div class="lines"><b>${esc(c.name||'')}</b>\nEmpanelled: ${esc(c.emp||'-')}\n\nIPD: ${esc(c.ipd||'-')}\n\nOPD: ${esc(c.opd||'-')}</div>
         <div class="eacts"><button class="btn" data-e="edit">Edit</button></div>
