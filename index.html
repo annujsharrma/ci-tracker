@@ -1443,7 +1443,7 @@ function approvalEmail(id){
 
 I hope this message finds you well.
 
-This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)} under the care of ${drName(c.dr)}.
+This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) has been admitted to Sir Ganga Ram Hospital on ${fmtLong(c.sent)} under the care of ${drName(c.dr)}.
 
 All relevant documents pertaining to this admission have been attached to this email for your reference.
 
@@ -1471,7 +1471,7 @@ Emp ID: ${c.emp||'-'}
 Patient ID: ${c.regId||'-'}
 Company: ${c.co||'-'}
 Treating Doctor: ${drName(c.dr)}
-Date of Admission: ${fmt(c.sent)}
+Date of Admission: ${fmtLong(c.sent)}
 
 Kindly expedite the approval and share the status at the earliest.
 
@@ -1483,8 +1483,8 @@ Warm regards,`;
 function extensionEmail(id){
   const c=byId(id); if(!c)return;
   const admLine = daysSince(c.sent)<0
-    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmt(c.sent)}`
-    : `has been admitted to Sir Ganga Ram Hospital on ${fmt(c.sent)}`;
+    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmtLong(c.sent)}`
+    : `has been admitted to Sir Ganga Ram Hospital on ${fmtLong(c.sent)}`;
   const subject=`REQUEST FOR EXTENSION OF APPROVAL | ${c.co||''} | ${c.name} | EMP. ID. ${c.emp||''}`;
   const body=
 `Dear Sir/Madam,
@@ -1493,11 +1493,11 @@ I hope this message finds you well.
 
 This is to formally notify you that ${c.name} (Patient ID: ${c.regId||'-'}) ${admLine} under the care of ${drName(c.dr)}.
 
-The last approval is valid till ${c.validTill?fmt(c.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
+The last approval is valid till ${c.validTill?fmtLong(c.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
 
 The revised estimate containing the additional amount required along with the additional number of hospitalisation days required has been attached.
 
-The IPD Slip and the running bill have been attached to this email for your reference.
+The initial authorisation and the running bill have been attached to this email for your reference.
 
 We kindly request your approval for the extension at the earliest to ensure continuity of care.
 
@@ -1516,11 +1516,13 @@ const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendC
    Email draft generator (standalone — not tied to a case)
    ================================================================ */
 const fmtFull=isoD=>{const d=new Date(isoD+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;};
+const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th');};
+const fmtLong=isoD=>{const d=new Date(isoD+'T00:00:00');return `${ordinal(d.getDate())} ${d.toLocaleDateString('en-IN',{month:'long'})} ${d.getFullYear()}`;};
 function admWord(isoD){
   if(!isoD)return 'has been admitted to Sir Ganga Ram Hospital';
   return daysSince(isoD)<0
-    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmt(isoD)}`
-    : `has been admitted to Sir Ganga Ram Hospital on ${fmt(isoD)}`;
+    ? `is scheduled for admission at Sir Ganga Ram Hospital on ${fmtLong(isoD)}`
+    : `has been admitted to Sir Ganga Ram Hospital on ${fmtLong(isoD)}`;
 }
 const EMAIL_TYPES={
   approval:{
@@ -1559,7 +1561,9 @@ Warm regards,`
       {id:'emp',label:'Emp ID'},
       {id:'date',label:'Admission date',type:'date'},
       {id:'dr',label:'Treating doctor'},
-      {id:'validTill',label:'Last approval valid till',type:'date'}
+      {id:'validTill',label:'Last approval valid till',type:'date'},
+      {id:'extDays',label:'Extension days requested',type:'number',ph:'e.g. 7'},
+      {id:'extAmount',label:'Extension amount requested (₹)',ph:'e.g. 1,50,000'}
     ],
     build:v=>({
       subject:`REQUEST FOR EXTENSION OF APPROVAL | ${v.co||''} | ${v.name||''} | EMP. ID. ${v.emp||''}`,
@@ -1569,11 +1573,11 @@ I hope this message finds you well.
 
 This is to formally notify you that ${v.name||''} (Patient ID: ${v.regId||'-'}) ${admWord(v.date)} under the care of ${drName(v.dr)}.
 
-The last approval is valid till ${v.validTill?fmt(v.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
+The last approval is valid till ${v.validTill?fmtLong(v.validTill):'-'}, and as per the doctor's advice, extension of approval is required for continuation of treatment.
 
-The revised estimate containing the additional amount required along with the additional number of hospitalisation days required has been attached.
+We request an extension of ${v.extDays||'-'} day${v.extDays==='1'?'':'s'} for an additional estimated amount of ₹${v.extAmount||'-'}. The revised estimate containing the additional amount and the additional number of hospitalisation days required has been attached.
 
-The IPD Slip and the running bill have been attached to this email for your reference.
+The initial authorisation and the running bill have been attached to this email for your reference.
 
 We kindly request your approval for the extension at the earliest to ensure continuity of care.
 
@@ -1597,7 +1601,7 @@ Warm regards,`
       {id:'designation',label:'Designation',ph:'Senior Consultant',def:'Senior Consultant'},
       {id:'department',label:'Department',ph:'Nephrology'},
       {id:'diagnosis',label:'Diagnosis',ph:'nephrotic syndrome'},
-      {id:'procedure',label:'Required procedure',ph:'kidney biopsy'},
+      {id:'procedure',label:'Required procedure',ph:'kidney biopsy',def:'admission'},
       {id:'certDate',label:'Medical certificate date',type:'date'}
     ],
     build:v=>{
@@ -1609,7 +1613,7 @@ Warm regards,`
 
 This is to bring to the kind notice of your good office that ${v.name||''}, aged ${v.age||'-'} years, ${v.sex||''}, a citizen of ${v.nationality||''}, holding Passport No. ${v.passport||''} and ${visa} No. ${v.visaNo||''}, has been admitted at Sir Ganga Ram Hospital, New Delhi, under ${drName(v.dr)}, ${v.designation||'Senior Consultant'}, Department of ${v.department||''}.
 
-As per the treating consultant, the patient has been diagnosed with ${v.diagnosis||''} and requires an immediate ${v.procedure||''}. The condition warranted urgent medical intervention, and in view of the emergency nature of the patient's condition, admission was extended on medical grounds notwithstanding that the patient is presently holding a ${visa}, as any delay in treatment could have led to deterioration of the patient's health.
+As per the treating consultant, the patient has been diagnosed with ${v.diagnosis||''} and requires an immediate ${v.procedure||'admission'}. The condition warranted urgent medical intervention, and in view of the emergency nature of the patient's condition, admission was extended on medical grounds notwithstanding that the patient is presently holding a ${visa}, as any delay in treatment could have led to deterioration of the patient's health.
 
 Form C in respect of the patient has been duly submitted through the online FRRO portal as per the prescribed procedure.
 
@@ -2025,7 +2029,7 @@ function closeTopOverlay(){
   return false;
 }
 let backExitArmed=false, backExitTimer=null, backIgnore=false;
-function pushBackGuard(){ try{history.pushState({mtGuard:1},'');}catch(e){} }
+function pushBackGuard(){ try{ if(!(history.state&&history.state.mtGuard)) history.pushState({mtGuard:1},''); }catch(e){} }
 function handleBack(){
   if(backIgnore){ backIgnore=false; return; }
   if(closeTopOverlay()){ pushBackGuard(); return; }   // back closed a screen — stay in app
