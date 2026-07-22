@@ -2134,7 +2134,13 @@ function init(){
     $('acctBox').hidden=true;
   }
 
-  if('serviceWorker' in navigator){navigator.serviceWorker.register('./sw.js').catch(function(){});}
+  if('serviceWorker' in navigator){
+    // auto-reload once when a newly deployed service worker takes control
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{
+      if(window.__mtReloading)return; window.__mtReloading=true; location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js').then(reg=>{ try{reg.update();}catch(e){} }).catch(function(){});
+  }
 }
 init();
 </script>

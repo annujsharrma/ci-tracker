@@ -1,4 +1,4 @@
-const CACHE = 'meditrack-v19';
+const CACHE = 'meditrack-v20';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -22,23 +22,22 @@ self.addEventListener('fetch', e => {
   // Never intercept live data / auth endpoints — let the browser handle them directly.
   if (/firestore\.googleapis\.com|firebaseio\.com|identitytoolkit\.googleapis\.com|securetoken\.googleapis\.com|google-analytics\.com|googletagmanager\.com/.test(url.hostname)) return;
 
-  // App navigations (opening the app, refresh, any ?query): serve the cached shell
-  // instantly so startup is immediate and works offline. New versions still arrive
-  // via the versioned cache above.
+  // App document → NETWORK-FIRST: always get the latest version when online, so
+  // deploys show up on the next open/refresh; fall back to cache only when offline.
   if (req.mode === 'navigate') {
     e.respondWith(
-      caches.match('./index.html').then(cached => cached || fetch(req).then(res => {
+      fetch(req).then(res => {
         if (res && res.status === 200) {
           const copy = res.clone();
           caches.open(CACHE).then(c => c.put('./index.html', copy));
         }
         return res;
-      }))
+      }).catch(() => caches.match('./index.html').then(r => r || caches.match('./')))
     );
     return;
   }
 
-  // Cache-first for the app shell; runtime-cache same-origin + the Firebase SDK (gstatic)
+  // Other assets → cache-first + runtime-cache same-origin & the Firebase SDK (gstatic)
   // so the installed PWA can still boot Firebase while offline.
   e.respondWith(
     caches.match(req).then(cached => {
