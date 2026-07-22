@@ -2009,6 +2009,34 @@ function setTab(t){
   render();
 }
 
+/* ================================================================
+   Hardware back button (Android): close the top-most open overlay;
+   on the home screen, require two presses to exit (like native apps).
+   Implemented with a single replenished history "guard" state.
+   ================================================================ */
+function closeTopOverlay(){
+  if($('dlgBox').classList.contains('open')){ dlgClose(dlgHasInput?null:false); return true; }
+  if($('coPanel').classList.contains('open')){ closeCos(); return true; }
+  if($('entPanel').classList.contains('open')){ closeEnts(); return true; }
+  if($('sheet').classList.contains('open')){ closeSheet(); return true; }
+  if($('dsheet').classList.contains('open')){ closeDsheet(); return true; }
+  if($('emailSheet').classList.contains('open')){ closeEmailSheet(); return true; }
+  if($('menuSheet').classList.contains('open')){ closeMenu(); return true; }
+  return false;
+}
+let backExitArmed=false, backExitTimer=null, backIgnore=false;
+function pushBackGuard(){ try{history.pushState({mtGuard:1},'');}catch(e){} }
+function handleBack(){
+  if(backIgnore){ backIgnore=false; return; }
+  if(closeTopOverlay()){ pushBackGuard(); return; }   // back closed a screen — stay in app
+  if(backExitArmed){ backIgnore=true; try{history.back();}catch(e){} return; }  // second press → exit
+  backExitArmed=true;
+  toast('Press back again to exit');
+  pushBackGuard();
+  clearTimeout(backExitTimer);
+  backExitTimer=setTimeout(()=>{backExitArmed=false;},2000);
+}
+
 function init(){
   /* main UI */
   $('fabAdd').onclick=openSheet;
@@ -2069,14 +2097,15 @@ function init(){
   $('dlgBg').onclick=()=>dlgClose(dlgHasInput?null:false);
   $('dlgInput').addEventListener('keydown',e=>{if(e.key==='Enter')dlgClose($('dlgInput').value);});
 
-  /* escape closes the top-most layer */
+  /* escape closes the top-most layer (desktop) */
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    if($('dlgBox').classList.contains('open')){dlgClose(dlgHasInput?null:false);return;}
-    if($('coPanel').classList.contains('open')){closeCos();return;}
-    if($('entPanel').classList.contains('open')){closeEnts();return;}
-    closeSheet();closeDsheet();closeMenu();closeEmailSheet();
+    closeTopOverlay();
   });
+
+  /* hardware / gesture back button */
+  window.addEventListener('popstate',handleBack);
+  pushBackGuard();   // seed a guard state so the first back press is intercepted
 
   /* sign in / out */
   $('loginForm').addEventListener('submit',doLogin);
