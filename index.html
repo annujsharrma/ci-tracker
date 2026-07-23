@@ -439,7 +439,7 @@ a{-webkit-tap-highlight-color:transparent}
   <div class="fabbar">
     <button class="fab secondary" id="fabEmail">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-      Email draft
+      Draft
     </button>
     <button class="fab" id="fabAdd">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -509,14 +509,15 @@ a{-webkit-tap-highlight-color:transparent}
 
 <!-- Email draft sheet -->
 <div class="sheet" id="emailSheet" role="dialog" aria-modal="true" aria-labelledby="emailTitle">
-  <h2 id="emailTitle">Email draft</h2>
+  <h2 id="emailTitle">Draft</h2>
   <div class="fld">
     <label for="emType">Email type</label>
     <select id="emType">
       <option value="approval">First email for approval</option>
       <option value="extension">Extension of approval</option>
       <option value="intimation">Intimation — foreign patient (non-medical visa)</option>
-      <option value="invitation">Medical visa invitation letter</option>
+      <option value="vil">Visa invitation letter (VIL) — request for medical visa</option>
+      <option value="invitation">Medical visa invitation letter (cover email)</option>
       <option value="docsRequest">Invitation letter — documents request</option>
     </select>
   </div>
@@ -1624,6 +1625,59 @@ A medical certificate dated ${v.certDate?fmtFull(v.certDate):'-'} issued by the 
 This email is being submitted by way of intimation. Kindly take the same on record and advise if any further information or documentation is required from the hospital's side. The hospital shall extend full cooperation as required.
 
 Thanking you,`
+      };
+    }
+  },
+  vil:{
+    fields:[
+      {id:'embassy',label:'Embassy (city, country)',ph:'Dhaka, Bangladesh'},
+      {id:'letterDate',label:'Letter date',type:'date'},
+      {id:'name',label:'Patient name',ph:'Aparna Bhuiyan'},
+      {id:'passport',label:'Patient passport no.',ph:'A22639511'},
+      {id:'travelDate',label:'Intended travel date',type:'date'},
+      {id:'diagnosis',label:'Suspected condition / diagnosis',ph:"Warthin's Tumor and Chronic Sialadenitis"},
+      {id:'attName',label:'Attendant name (optional)',ph:'Prome Bhuiyan'},
+      {id:'attPassport',label:'Attendant passport no. (optional)',ph:'A21240489'},
+      {id:'dr',label:'Signatory doctor',def:'Dr. Sangeet Agarwal'},
+      {id:'drDesig',label:'Signatory designation',def:'Vice-Chairperson, Head and Neck Surgical Oncology'}
+    ],
+    build:v=>{
+      const ld=v.letterDate?fmtLong(v.letterDate):fmtLong(iso(today()));
+      const td=v.travelDate?fmtLong(v.travelDate):'-';
+      const rows=[`1. ${v.name||''}  |  Passport No. ${v.passport||''}  |  Patient  |  Medical Visa`];
+      if(v.attName)rows.push(`2. ${v.attName}  |  Passport No. ${v.attPassport||''}  |  Attendant  |  Medical Attendant Visa`);
+      return {
+        subject:`REQUEST FOR MEDICAL VISA | ${(v.name||'').toUpperCase()} | PASSPORT NO. ${(v.passport||'').toUpperCase()}`,
+        body:`Date: ${ld}
+
+To,
+The Visa Officer
+Embassy of India
+${v.embassy||''}
+
+Subject: Request for Medical Visa
+
+Dear Sir/Madam,
+
+Greetings from Sir Ganga Ram Hospital.
+
+This is to inform you that ${v.name||''}, bearing Passport Number ${v.passport||''}, wishes to travel to India for medical treatment at Sir Ganga Ram Hospital, New Delhi on ${td}.
+
+As per evaluation of the sent reports, the patient is a suspected case of ${v.diagnosis||''} and will be visiting India for management and treatment at Sir Ganga Ram Hospital, New Delhi.
+
+We kindly request you to issue the necessary Medical Visa at the earliest to enable the patient to travel to India for treatment. Any assistance provided to the patient and attendants will be highly appreciated. The details are as follows:
+
+S. No.  |  Name  |  Passport Number  |  Remarks  |  Visa Required
+${rows.join('\n')}
+
+Thanks and Regards,
+
+${v.dr||'Dr. Sangeet Agarwal'}
+${v.drDesig||'Vice-Chairperson, Head and Neck Surgical Oncology'}
+Sir Ganga Ram Hospital
+New Delhi – 110060
+
+Note: This Invitation letter has been issued solely on the basis of Medical Information and reports provided by the patient. The Hospital and the undersigned assume that the patient intends to visit India for Medical consultation and Treatment and does not guarantee the activities of the patient beyond or during scheduled medical consultation.`
       };
     }
   },
