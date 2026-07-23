@@ -1528,12 +1528,12 @@ function admWord(isoD){
 const EMAIL_TYPES={
   approval:{
     fields:[
-      {id:'name',label:'Patient name',ph:'e.g. Ramesh Kumar'},
-      {id:'regId',label:'Patient ID',ph:'SGRH/2026/…'},
+      {id:'name',label:'Patient name'},
+      {id:'regId',label:'Patient ID'},
       {id:'co',label:'Company'},
       {id:'emp',label:'Emp ID'},
       {id:'date',label:'Admission date',type:'date'},
-      {id:'dr',label:'Treating doctor',ph:'Dr. Mehta'}
+      {id:'dr',label:'Treating doctor'}
     ],
     build:v=>({
       subject:`REQUEST FOR APPROVAL | ${v.co||''} | ${v.name||''} | EMP. ID. ${v.emp||''}`,
@@ -1563,8 +1563,8 @@ Warm regards,`
       {id:'date',label:'Admission date',type:'date'},
       {id:'dr',label:'Treating doctor'},
       {id:'validTill',label:'Last approval valid till',type:'date'},
-      {id:'extDays',label:'Extension days requested',type:'number',ph:'e.g. 7'},
-      {id:'extAmount',label:'Extension amount requested (₹)',ph:'e.g. 1,50,000'}
+      {id:'extDays',label:'Extension days requested',type:'number'},
+      {id:'extAmount',label:'Extension amount requested (₹)'}
     ],
     build:v=>({
       subject:`REQUEST FOR EXTENSION OF APPROVAL | ${v.co||''} | ${v.name||''} | EMP. ID. ${v.emp||''}`,
@@ -1591,18 +1591,18 @@ Warm regards,`
   },
   intimation:{
     fields:[
-      {id:'name',label:'Patient name',ph:'Mr. Hakimi Abdul Hamid'},
+      {id:'name',label:'Patient name'},
       {id:'age',label:'Age',type:'number'},
       {id:'sex',label:'Sex',type:'select',options:['Male','Female','Other']},
-      {id:'nationality',label:'Nationality',ph:'Afghanistan'},
+      {id:'nationality',label:'Nationality'},
       {id:'passport',label:'Passport No.'},
-      {id:'visaType',label:'Visa type',ph:'Business Visa',def:'Business Visa'},
+      {id:'visaType',label:'Visa type',def:'Business Visa'},
       {id:'visaNo',label:'Visa No.'},
-      {id:'dr',label:'Treating consultant',ph:'Dr. (Prof.) Anurag Gupta'},
-      {id:'designation',label:'Designation',ph:'Senior Consultant',def:'Senior Consultant'},
-      {id:'department',label:'Department',ph:'Nephrology'},
-      {id:'diagnosis',label:'Diagnosis',ph:'nephrotic syndrome'},
-      {id:'procedure',label:'Required procedure',ph:'kidney biopsy',def:'admission'},
+      {id:'dr',label:'Treating consultant'},
+      {id:'designation',label:'Designation',def:'Senior Consultant'},
+      {id:'department',label:'Department'},
+      {id:'diagnosis',label:'Diagnosis'},
+      {id:'procedure',label:'Required procedure',def:'admission'},
       {id:'certDate',label:'Medical certificate date',type:'date'}
     ],
     build:v=>{
@@ -1630,14 +1630,14 @@ Thanking you,`
   },
   vil:{
     fields:[
-      {id:'embassy',label:'Embassy (city, country)',ph:'Dhaka, Bangladesh'},
+      {id:'embassy',label:'Embassy (city, country)'},
       {id:'letterDate',label:'Letter date',type:'date'},
-      {id:'name',label:'Patient name',ph:'Aparna Bhuiyan'},
-      {id:'passport',label:'Patient passport no.',ph:'A22639511'},
+      {id:'name',label:'Patient name'},
+      {id:'passport',label:'Patient passport no.'},
       {id:'travelDate',label:'Intended travel date',type:'date'},
-      {id:'diagnosis',label:'Suspected condition / diagnosis',ph:"Warthin's Tumor and Chronic Sialadenitis"},
-      {id:'attName',label:'Attendant name (optional)',ph:'Prome Bhuiyan'},
-      {id:'attPassport',label:'Attendant passport no. (optional)',ph:'A21240489'},
+      {id:'diagnosis',label:'Suspected condition / diagnosis'},
+      {id:'attName',label:'Attendant name (optional)'},
+      {id:'attPassport',label:'Attendant passport no. (optional)'},
       {id:'dr',label:'Signatory doctor',def:'Dr. Sangeet Agarwal'},
       {id:'drDesig',label:'Signatory designation',def:'Vice-Chairperson, Head and Neck Surgical Oncology'}
     ],
@@ -1683,9 +1683,9 @@ Note: This Invitation letter has been issued solely on the basis of Medical Info
   },
   invitation:{
     fields:[
-      {id:'name',label:'Patient name',ph:'Mr. Fraidoon Ferozy'},
-      {id:'country',label:'Country',ph:'USA'},
-      {id:'passport',label:'Passport No.',ph:'A34994080'}
+      {id:'name',label:'Patient name'},
+      {id:'country',label:'Country'},
+      {id:'passport',label:'Passport No.'}
     ],
     build:v=>({
       subject:`MEDICAL VISA INVITATION LETTER | ${(v.name||'').toUpperCase()} | ${(v.country||'').toUpperCase()} | PASSPORT NO. ${(v.passport||'').toUpperCase()}`,
