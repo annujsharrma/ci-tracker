@@ -485,7 +485,10 @@ a{-webkit-tap-highlight-color:transparent}
       <div class="fld"><label for="fDtI">Admission date *</label><input id="fDtI" type="date"></div>
       <div class="fld"><label for="fTmI">Admission time *</label><input id="fTmI" type="time"></div>
     </div>
-    <div class="fld"><label for="fCty">Country</label><input id="fCty" placeholder="e.g. Bangladesh" autocomplete="off"></div>
+    <div class="fld codrop"><label for="fCty">Country</label>
+      <input id="fCty" placeholder="Type to search country…" autocomplete="off">
+      <div class="colist" id="ctyList"></div>
+    </div>
   </div>
 
   <div id="grpCash" style="display:none;">
@@ -1594,7 +1597,7 @@ Warm regards,`
       {id:'name',label:'Patient name'},
       {id:'age',label:'Age',type:'number'},
       {id:'sex',label:'Sex',type:'select',options:['Male','Female','Other']},
-      {id:'nationality',label:'Nationality'},
+      {id:'nationality',label:'Nationality',type:'country'},
       {id:'passport',label:'Passport No.'},
       {id:'visaType',label:'Visa type',def:'Business Visa'},
       {id:'visaNo',label:'Visa No.'},
@@ -1684,7 +1687,7 @@ Note: This Invitation letter has been issued solely on the basis of Medical Info
   invitation:{
     fields:[
       {id:'name',label:'Patient name'},
-      {id:'country',label:'Country'},
+      {id:'country',label:'Country',type:'country'},
       {id:'passport',label:'Passport No.'}
     ],
     build:v=>({
@@ -1751,6 +1754,11 @@ function renderEmailFields(){
       (f.options||[]).forEach(o=>{const op=document.createElement('option');op.value=o;op.textContent=o;el.appendChild(op);});
     }else if(f.type==='textarea'){
       el=document.createElement('textarea');
+    }else if(f.type==='country'){
+      wrap.classList.add('codrop');
+      el=document.createElement('input');
+      el.type='text';
+      el.autocomplete='off';
     }else{
       el=document.createElement('input');
       el.type=f.type||'text';
@@ -1759,8 +1767,14 @@ function renderEmailFields(){
     }
     el.id='em_'+f.id;
     if(f.ph)el.placeholder=f.ph;
+    else if(f.type==='country')el.placeholder='Type to search country…';
     if(f.def)el.value=f.def;
     wrap.appendChild(el);
+    if(f.type==='country'){
+      const ctyBox=document.createElement('div'); ctyBox.className='colist';
+      wrap.appendChild(ctyBox);
+      attachCtyDropdown(el,ctyBox);
+    }
     box.appendChild(wrap);
   });
 }
@@ -1818,7 +1832,7 @@ function syncBackdrop(){
   $('sheetbg').classList.toggle('open',any);
 }
 function closeSheet(){
-  $('sheet').classList.remove('open'); $('coList').classList.remove('open'); syncBackdrop();
+  $('sheet').classList.remove('open'); $('coList').classList.remove('open'); $('ctyList').classList.remove('open'); syncBackdrop();
 }
 function openMenu(){ $('menuSheet').classList.add('open'); syncBackdrop(); }
 function closeMenu(){ $('menuSheet').classList.remove('open'); syncBackdrop(); }
@@ -1833,6 +1847,54 @@ function setCat(k){
   $('grpIntl').style.display=k==='international'?'block':'none';
   $('grpCash').style.display=k==='cash'?'block':'none';
   $('grpDom2').style.display=k==='international'?'none':'block';
+}
+
+/* ---- Country dropdown (searchable) ----
+   Full list of the world's countries and territories, including
+   partially-recognised and disputed states — listed for medical /
+   administrative use only, with no political stance implied. */
+const COUNTRIES=[
+"Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda","Argentina","Armenia","Australia","Austria","Azerbaijan",
+"Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso","Burundi",
+"Cabo Verde","Cambodia","Cameroon","Canada","Central African Republic","Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)","Congo (Kinshasa)","Costa Rica","Côte d'Ivoire","Croatia","Cuba","Cyprus","Czechia",
+"Denmark","Djibouti","Dominica","Dominican Republic",
+"Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
+"Fiji","Finland","France",
+"Gabon","Gambia","Georgia","Germany","Ghana","Greece","Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana",
+"Haiti","Honduras","Hong Kong","Hungary",
+"Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy",
+"Jamaica","Japan","Jordan",
+"Kazakhstan","Kenya","Kiribati","Kosovo","Kuwait","Kyrgyzstan",
+"Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg",
+"Macau","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania","Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro","Morocco","Mozambique","Myanmar",
+"Namibia","Nauru","Nepal","Netherlands","New Zealand","Nicaragua","Niger","Nigeria","North Korea","North Macedonia","Norway",
+"Oman",
+"Pakistan","Palau","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal",
+"Qatar",
+"Romania","Russia","Rwanda",
+"Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino","São Tomé and Príncipe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Korea","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria",
+"Taiwan","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Tuvalu",
+"Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan",
+"Vanuatu","Vatican City","Venezuela","Vietnam",
+"Western Sahara",
+"Yemen",
+"Zambia","Zimbabwe"
+].sort((a,b)=>a.localeCompare(b));
+
+function renderCtyList(box,input,filter){
+  const f=(filter||'').trim().toLowerCase();
+  const matches=COUNTRIES.filter(c=>c.toLowerCase().includes(f));
+  box.innerHTML=matches.length
+    ? matches.map(c=>`<div class="coopt" data-cty="${esc(c)}">${esc(c)}</div>`).join('')
+    : '<div class="coopt" style="color:var(--muted)">No matching country</div>';
+  box.classList.add('open');
+  box.querySelectorAll('.coopt[data-cty]').forEach(o=>{
+    o.onclick=()=>{ input.value=o.dataset.cty; box.classList.remove('open'); };
+  });
+}
+function attachCtyDropdown(input,box){
+  input.addEventListener('input',()=>renderCtyList(box,input,input.value));
+  input.addEventListener('focus',()=>renderCtyList(box,input,input.value));
 }
 
 function companyNames(){return Object.keys(ents).sort();}
@@ -2145,8 +2207,11 @@ function init(){
   /* company dropdown */
   $('fCoSel').addEventListener('input',e=>renderCoList(e.target.value));
   $('fCoSel').addEventListener('focus',e=>renderCoList(e.target.value));
+  /* country dropdown (case form) */
+  attachCtyDropdown($('fCty'),$('ctyList'));
   document.addEventListener('click',e=>{
-    if(!e.target.closest('.codrop'))$('coList').classList.remove('open');
+    if(!e.target.closest('.codrop'))
+      document.querySelectorAll('.colist.open').forEach(l=>l.classList.remove('open'));
   });
 
   /* dialog */
