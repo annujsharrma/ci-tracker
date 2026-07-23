@@ -1638,8 +1638,8 @@ Thanking you,`
       {id:'diagnosis',label:'Suspected condition / diagnosis'},
       {id:'attName',label:'Attendant name (optional)'},
       {id:'attPassport',label:'Attendant passport no. (optional)'},
-      {id:'dr',label:'Signatory doctor',def:'Dr. Sangeet Agarwal'},
-      {id:'drDesig',label:'Signatory designation',def:'Vice-Chairperson, Head and Neck Surgical Oncology'}
+      {id:'dr',label:'Signatory doctor'},
+      {id:'drDesig',label:'Signatory designation'}
     ],
     build:v=>{
       const ld=v.letterDate?fmtLong(v.letterDate):fmtLong(iso(today()));
@@ -1672,8 +1672,8 @@ ${rows.join('\n')}
 
 Thanks and Regards,
 
-${v.dr||'Dr. Sangeet Agarwal'}
-${v.drDesig||'Vice-Chairperson, Head and Neck Surgical Oncology'}
+${v.dr||''}
+${v.drDesig||''}
 Sir Ganga Ram Hospital
 New Delhi – 110060
 
