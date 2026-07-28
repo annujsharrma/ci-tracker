@@ -557,6 +557,11 @@ a{-webkit-tap-highlight-color:transparent}
     PSU Master sheet
     <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
   </button>
+  <button class="menuitem" id="miImport">
+    <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+    Import current patients (July 2026)
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+  </button>
   <div class="acct" id="acctBox" hidden>
     <div class="sync muted" id="syncStatus">Connecting…</div>
     <div class="acct-row"><span class="acct-dot"></span><span class="acct-email" id="acctEmail"></span></div>
@@ -1514,6 +1519,56 @@ Warm regards,`;
 const ACTIONS={approvalEmail,chaseEmail,extensionEmail,logFU,approveCase,extendCase,cformDone,frroDone,dischargeFor,editCase,undoApproval,undoCform,undoDischarge};
 
 /* ================================================================
+   One-time import: current (not-yet-discharged) patients from the
+   July 2026 deadline sheet. Idempotent — existing Reg IDs are skipped.
+   ================================================================ */
+const SEED_JUL2026=[
+  {regId:'2227744',name:'Baidhar Sethi',co:'IOCL',dr:'Dr. Bharat Rastogi',sent:'2026-07-12',validTill:'2026-07-26',apprDays:15,phone:'8249632359',notes:'1353-A t-3'},
+  {regId:'3175485',name:'Ajit Kumar Singh',co:'DMRC',dr:'Dr. Abhinav Gulani',sent:'2026-07-12',validTill:'2026-07-26',apprDays:15,phone:'',notes:''},
+  {regId:'3712374',name:'Arokiadass Joseph',co:'WHO',dr:'Dr. Shyam Aggarwal',sent:'2026-07-13',validTill:'2026-07-26',apprDays:7,phone:'9899000462',notes:'2213 T-1'},
+  {regId:'1201057',name:'Shailendra Jain',co:'ONGC',dr:'Dr. Nitin Gupta',sent:'2026-07-15',validTill:'2026-07-15',apprDays:1,phone:'7042693033',notes:'Daycare'},
+  {regId:'344872',name:'Maya Devi',co:'EIL',dr:'Dr. Shyam Aggarwal',sent:'2026-07-17',validTill:'2026-07-23',apprDays:7,phone:'9971386347',notes:'1356- B t-3'},
+  {regId:'3722626',name:'Shalini wla',co:'RBI',dr:'Dr. Amitabh Yadav',sent:'2026-07-19',validTill:'2026-07-25',apprDays:7,phone:'9457838087',notes:'1359-A t-3'},
+  {regId:'3770330',name:'Mahendra Singh',co:'BEL',dr:'Dr. Ganesh Raj Shivnani',sent:'2026-07-20',validTill:'2026-07-26',apprDays:7,phone:'9410602546',notes:'1649- t 1D'},
+  {regId:'2219935',name:'Vishwa Mohini Mahajan',co:'BPCL',dr:'Dr. Anshu Rohtagi',sent:'2026-07-15',validTill:'2026-07-29',apprDays:15,phone:'9711905647',notes:'1226 t 1D'},
+  {regId:'3659785',name:'Veena Devi',co:'NTPC',dr:'Dr. Rajeev Ranjan',sent:'2026-06-28',validTill:'2026-08-01',apprDays:7,phone:'9650994411',notes:'I'},
+  {regId:'3462051',name:'Anant S Desai',co:'IOCL',dr:'Dr. Atul Kakkar',sent:'2026-07-23',validTill:'2026-08-06',apprDays:15,phone:'7506448655',notes:'Deluxe'},
+  {regId:'1897018',name:'Sonwati Devi',co:'IOCL',dr:'Dr. Kavita Tyagi',sent:'2026-07-23',validTill:'2026-08-06',apprDays:15,phone:'9811875692',notes:'9811875692'},
+  {regId:'3681320',name:'Venkteshwar Prasad Sinha',co:'IOCL',dr:'Dr. Shelly Hukku',sent:'2026-07-23',validTill:'2026-08-06',apprDays:15,phone:'9873050507',notes:'Radiology'},
+  {regId:'3771218',name:'Shanti Swaroop',co:'IOCL',dr:'Dr. Anil Kumr Arora',sent:'2026-07-23',validTill:'2026-08-06',apprDays:15,phone:'9437567133',notes:'3906-A ETS'},
+  {regId:'2615680',name:'Hira Kala',co:'RBI',dr:'Dr. Tarun Kumar',sent:'2026-07-24',validTill:'2026-07-30',apprDays:7,phone:'9968646461',notes:'3rd HDU-10 t-2'},
+  {regId:'3737619',name:'Tellu Ram',co:'IOCL',dr:'Dr. Sabyasachi Bal',sent:'2026-07-24',validTill:'2026-08-07',apprDays:15,phone:'8901551225',notes:'t-3'},
+  {regId:'3776726',name:'Gangaram',co:'IOCL',dr:'Dr. Anant Kumar Tiwari',sent:'2026-07-24',validTill:'2026-08-07',apprDays:15,phone:'9313036308',notes:'1402 Single'},
+  {regId:'3782947',name:'Rebati Kumar Saikia',co:'BCPL',dr:'Dr. Ganesh Raj Shivnani',sent:'2026-07-25',validTill:'2026-07-31',apprDays:7,phone:'9678001199',notes:'IMat-3'},
+  {regId:'989962',name:'Pawan Jaiswal',co:'DMRC',dr:'Dr. Sudhir',sent:'2026-07-27',validTill:'2026-08-10',apprDays:15,phone:'8076952812',notes:'Daycare'},
+  {regId:'3237350',name:'Laxmi Bai Meena',co:'DMRC',dr:'Dr. K.Gujaral',sent:'2026-07-25',validTill:'2026-08-08',apprDays:15,phone:'7891954133',notes:'1251-A-T-3'},
+  {regId:'3780181',name:'Amit Aggarwal',co:'IOCL',dr:'Dr. D.S. Rana',sent:'2026-07-25',validTill:'2026-08-08',apprDays:15,phone:'9899092850',notes:'Daycare'},
+  {regId:'3784905',name:'Baby of Laxmi Bail Meena',co:'DMRC',dr:'Dr. K.Gujral',sent:'2026-07-25',validTill:'2026-08-08',apprDays:15,phone:'7891954133',notes:'A2-2ND ARD'}
+];
+async function importSeedPatients(){
+  const have=new Set(cases.map(c=>String(c.regId||'').trim()));
+  const add=SEED_JUL2026.filter(s=>!have.has(s.regId));
+  if(!add.length){toast('Already imported — no new patients','warn');return;}
+  const skipped=SEED_JUL2026.length-add.length;
+  const ok=await uiConfirm({
+    title:'Import current patients?',
+    message:`Add ${add.length} admitted patient${add.length===1?'':'s'} to Open.`+(skipped?` ${skipped} already present will be skipped.`:'')+' Emp ID is set to 1234 where not available.',
+    okText:'Import'
+  });
+  if(!ok)return;
+  const prev=snapCases();
+  add.forEach(s=>cases.push({
+    id:uid(),cat:'company',status:'approved',
+    name:s.name,regId:s.regId,emp:'1234',co:s.co,dr:s.dr,
+    sent:s.sent,validTill:s.validTill,apprDays:s.apprDays,days:null,
+    email:'',phone:s.phone,notes:s.notes,
+    fu:[],snooze:null,notified:[],notifiedF:[]
+  }));
+  saveCases(); setTab('open');
+  offerUndo(prev,`Imported ${add.length} patient${add.length===1?'':'s'} into Open`);
+}
+
+/* ================================================================
    Email draft generator (standalone — not tied to a case)
    ================================================================ */
 const fmtFull=isoD=>{const d=new Date(isoD+'T00:00:00');return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;};
@@ -2135,6 +2190,7 @@ function init(){
   /* reference menu + panels */
   $('miEnts').onclick=()=>{closeMenu();openEnts();};
   $('miCos').onclick=()=>{closeMenu();openCos();};
+  $('miImport').onclick=()=>{closeMenu();importSeedPatients();};
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
   $('entAdd').onclick=addCompany;
