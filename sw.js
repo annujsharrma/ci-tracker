@@ -1,4 +1,5 @@
-const CACHE = 'meditrack-v24';
+// Bump this on every push, and keep it in sync with APP_VERSION in index.html.
+const CACHE = 'meditrack-v25';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -385,6 +385,7 @@ a{-webkit-tap-highlight-color:transparent}
 
 /* account block in the reference menu */
 .acct{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.verline{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);text-align:center;font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.02em}
 .acct-row{display:flex;align-items:center;gap:9px;margin-bottom:10px}
 .acct-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 0 3px var(--accent-soft)}
 .acct-email{font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -565,6 +566,7 @@ a{-webkit-tap-highlight-color:transparent}
     <div class="acct-row"><span class="acct-dot"></span><span class="acct-email" id="acctEmail"></span></div>
     <button class="btn" id="btnSignOut">Sign out</button>
   </div>
+  <div class="verline" id="verLine"></div>
 </div>
 
 <!-- Companies panel -->
@@ -649,6 +651,9 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
+/* App version — BUMP THIS ON EVERY PUSH (keep in sync with CACHE in sw.js)
+   so you can confirm the deployed build from Desk reference. */
+const APP_VERSION='v25';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -2174,6 +2179,7 @@ function handleBack(){
 
 function init(){
   /* main UI */
+  $('verLine').textContent='MediTrack '+APP_VERSION;
   $('fabAdd').onclick=openSheet;
   $('btnCancel').onclick=closeSheet;
   $('btnSave').onclick=saveCase;
