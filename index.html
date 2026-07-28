@@ -785,6 +785,8 @@ const byId=id=>cases.find(x=>x.id===id);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const today=()=>{const d=new Date();d.setHours(0,0,0,0);return d;};
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+/* admission date (YYYY-MM-DD) for a case — from admitTs (international) or sent (company/cash) */
+const admDate=o=>o&&o.admitTs?iso(new Date(o.admitTs)):((o&&o.sent)||'');
 const fmt=s=>{const d=new Date(s+'T00:00:00');return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});};
 const fmtDT=ts=>new Date(ts).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true});
 const daysSince=s=>Math.floor((today()-new Date(s+'T00:00:00'))/86400000);
@@ -1981,6 +1983,19 @@ function saveCase(){
     if(!dt){toast('Enter date of admission','warn');return;}
     Object.assign(f,{regId:$('fRegC').value.trim(),sent:dt});
     newStatus='open';
+  }
+
+  // Prevent duplicates: same registration number AND same date of admission.
+  const reg=(f.regId||'').trim();
+  if(reg){
+    const nd=admDate(f);
+    const dup=cases.find(c=>c.id!==editId
+      && (c.regId||'').trim().toLowerCase()===reg.toLowerCase()
+      && admDate(c)===nd);
+    if(dup){
+      toast('Duplicate: “'+reg+'” is already admitted on '+fmtFull(nd),'warn');
+      return;
+    }
   }
 
   if(editId){
