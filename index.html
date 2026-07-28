@@ -389,6 +389,7 @@ a{-webkit-tap-highlight-color:transparent}
 .acct-dot{width:9px;height:9px;border-radius:50%;background:var(--accent);flex-shrink:0;box-shadow:0 0 0 3px var(--accent-soft)}
 .acct-email{font-size:13px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .acct .btn{min-height:44px}
+.acct-ver{font-size:11px;color:var(--faint);text-align:center;margin-top:10px;letter-spacing:.04em}
 .sync{font-size:12px;font-weight:600;padding:9px 11px;border-radius:var(--r-sm);margin-bottom:10px;line-height:1.4}
 .sync.ok{color:var(--accent);background:var(--accent-soft)}
 .sync.warn{color:var(--warn);background:var(--warn-soft)}
@@ -566,6 +567,7 @@ a{-webkit-tap-highlight-color:transparent}
     <div class="sync muted" id="syncStatus">Connecting…</div>
     <div class="acct-row"><span class="acct-dot"></span><span class="acct-email" id="acctEmail"></span></div>
     <button class="btn" id="btnSignOut">Sign out</button>
+    <div class="acct-ver" id="acctVer"></div>
   </div>
 </div>
 
@@ -651,6 +653,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
+const APP_VERSION='v26';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -2191,6 +2194,7 @@ function init(){
   $('miEnts').onclick=()=>{closeMenu();openEnts();};
   $('miCos').onclick=()=>{closeMenu();openCos();};
   $('miImport').onclick=()=>{closeMenu();importSeedPatients();};
+  $('acctVer').textContent='MediTrack '+APP_VERSION;
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
   $('entAdd').onclick=addCompany;
