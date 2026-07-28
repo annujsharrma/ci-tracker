@@ -731,7 +731,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v28';
+const APP_VERSION='v29';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -1952,26 +1952,48 @@ function checkNotify(){
 function openDrawer(){ $('drawer').classList.add('open'); $('drawerBg').classList.add('open'); }
 function closeDrawer(){ $('drawer').classList.remove('open'); $('drawerBg').classList.remove('open'); }
 
-/* --- Scan: try a scanner app on Android, fall back to the camera --- */
-const SCAN_PKGS=['com.adobe.scan.android','com.google.android.apps.docs'];
+/* --- Launch an installed Android app by package.
+       browser_fallback_url points back here with a marker, so a missing app
+       lands on our own fallback instead of the Play Store. --- */
+const SCAN_PKG='com.adobe.scan.android';   // Adobe Scan
+const MAIL_PKG='com.google.android.gm';    // Gmail (inbox)
+function launchApp(pkg,failParam){
+  const back=location.origin+location.pathname+'?'+failParam+'=1';
+  const a=document.createElement('a');
+  a.href='intent://#Intent;package='+pkg+';S.browser_fallback_url='+encodeURIComponent(back)+';end';
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>a.remove(),3000);
+}
+
+/* --- Scan: open Adobe Scan; if it isn't installed, use the camera --- */
 function openScan(){
   closeDrawer();
   if(!/Android/i.test(navigator.userAgent)){ $('scanFile').click(); return; }
-  let left=false;
-  const onHide=()=>{ if(document.hidden)left=true; };
-  document.addEventListener('visibilitychange',onHide);
-  try{
-    location.href='intent:#Intent;package='+SCAN_PKGS[0]+
-      ';action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
-  }catch(e){}
-  setTimeout(()=>{
-    document.removeEventListener('visibilitychange',onHide);
-    if(!left){ $('scanFile').click(); }   // scanner app not available → camera
-  },1200);
+  launchApp(SCAN_PKG,'scanfail');
 }
 
-/* --- Mail: open the phone's mail app --- */
-function openMailApp(){ closeDrawer(); location.href='mailto:'; }
+/* --- Mail: open the Gmail inbox --- */
+function openMailApp(){
+  closeDrawer();
+  if(!/Android/i.test(navigator.userAgent)){ location.href='mailto:'; return; }
+  launchApp(MAIL_PKG,'mailfail');
+}
+
+/* handle the "app not installed" return trip */
+function handleAppFallback(){
+  const q=new URLSearchParams(location.search);
+  if(q.get('scanfail')){
+    history.replaceState({},'',location.pathname);
+    toast('Adobe Scan not found — opening camera','warn');
+    setTimeout(()=>$('scanFile').click(),400);
+  }else if(q.get('mailfail')){
+    history.replaceState({},'',location.pathname);
+    toast('Gmail not found — opening your mail app','warn');
+    setTimeout(()=>{location.href='mailto:';},400);
+  }
+}
 
 /* ================================================================
    Google Tasks (read-only) — pending tasks in the drawer
@@ -2427,6 +2449,7 @@ function init(){
   $('dwMail').onclick=openMailApp;
   $('dwTasks').onclick=toggleTasks;
   $('scanFile').onchange=e=>{ if(e.target.files&&e.target.files.length){ toast('Photo captured — attach it from your gallery'); e.target.value=''; } };
+  handleAppFallback();
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
   $('entAdd').onclick=addCompany;

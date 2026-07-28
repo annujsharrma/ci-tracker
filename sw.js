@@ -1,4 +1,4 @@
-const CACHE = 'meditrack-v28';
+const CACHE = 'meditrack-v29';
 const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
