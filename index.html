@@ -503,11 +503,6 @@ a{-webkit-tap-highlight-color:transparent}
     <div><div class="eyebrow">SGRH</div><h2>MediTrack</h2></div>
   </div>
 
-  <button class="dw-item" id="dwScan">
-    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg></span>
-    Scan
-  </button>
-
   <button class="dw-item" id="dwMail">
     <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
     Mail
@@ -520,9 +515,6 @@ a{-webkit-tap-highlight-color:transparent}
   </button>
   <div class="tasks-reveal" id="tasksReveal"><div class="tasks-wrap"><div class="tasks-in" id="tasksBody"></div></div></div>
 </aside>
-
-<!-- hidden camera input used as the Scan fallback -->
-<input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
 
 <!-- shared backdrop for bottom sheets -->
 <div class="sheetbg" id="sheetbg"></div>
@@ -578,6 +570,7 @@ a{-webkit-tap-highlight-color:transparent}
   <div class="fld"><label for="fNo">Remarks</label><textarea id="fNo" placeholder="Any remarks — ward, UHID, reference, condition…"></textarea></div>
 
   <div class="savebar">
+    <button class="btn danger" id="btnDelete" hidden>Delete</button>
     <button class="btn" id="btnCancel">Cancel</button>
     <button class="btn pri" id="btnSave">Save case</button>
   </div>
@@ -631,11 +624,6 @@ a{-webkit-tap-highlight-color:transparent}
   <button class="menuitem" id="miCos">
     <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M9 13h1M9 17h1M14 9h1M14 13h1M14 17h1"/></svg></span>
     PSU Master sheet
-    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-  </button>
-  <button class="menuitem" id="miImport">
-    <span class="mi-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
-    Import
     <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
   </button>
   <div class="acct" id="acctBox" hidden>
@@ -731,7 +719,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v29';
+const APP_VERSION='v30';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -1955,7 +1943,6 @@ function closeDrawer(){ $('drawer').classList.remove('open'); $('drawerBg').clas
 /* --- Launch an installed Android app by package.
        browser_fallback_url points back here with a marker, so a missing app
        lands on our own fallback instead of the Play Store. --- */
-const SCAN_PKG='com.adobe.scan.android';   // Adobe Scan
 const MAIL_PKG='com.google.android.gm';    // Gmail (inbox)
 function launchApp(pkg,failParam){
   const back=location.origin+location.pathname+'?'+failParam+'=1';
@@ -1965,13 +1952,6 @@ function launchApp(pkg,failParam){
   document.body.appendChild(a);
   a.click();
   setTimeout(()=>a.remove(),3000);
-}
-
-/* --- Scan: open Adobe Scan; if it isn't installed, use the camera --- */
-function openScan(){
-  closeDrawer();
-  if(!/Android/i.test(navigator.userAgent)){ $('scanFile').click(); return; }
-  launchApp(SCAN_PKG,'scanfail');
 }
 
 /* --- Mail: open the Gmail inbox --- */
@@ -1984,11 +1964,7 @@ function openMailApp(){
 /* handle the "app not installed" return trip */
 function handleAppFallback(){
   const q=new URLSearchParams(location.search);
-  if(q.get('scanfail')){
-    history.replaceState({},'',location.pathname);
-    toast('Adobe Scan not found — opening camera','warn');
-    setTimeout(()=>$('scanFile').click(),400);
-  }else if(q.get('mailfail')){
+  if(q.get('mailfail')){
     history.replaceState({},'',location.pathname);
     toast('Gmail not found — opening your mail app','warn');
     setTimeout(()=>{location.href='mailto:';},400);
@@ -2175,6 +2151,7 @@ function openSheet(){
   $('fDt').value=iso(today()); $('fDy').value=1;
   $('fDtI').value=iso(today());
   $('fTmI').value=new Date().toTimeString().slice(0,5);
+  $('btnDelete').hidden=true;                    // nothing to delete on a new case
   $('sheet').classList.add('open'); syncBackdrop();
 }
 
@@ -2189,7 +2166,23 @@ function editCase(id){
   $('fRegC').value=(c.cat==='cash')?(c.regId||''):'';
   $('fDt').value=c.sent||iso(today()); $('fDy').value=c.days||''; $('fAd').value=c.apprDays||''; $('fEm').value=c.email||'';
   if(c.admitTs){const d=new Date(c.admitTs);$('fDtI').value=iso(d);$('fTmI').value=d.toTimeString().slice(0,5);}
+  $('btnDelete').hidden=false;
   $('sheet').classList.add('open'); syncBackdrop();
+}
+
+/* delete the case currently open in the edit sheet */
+async function deleteEditingCase(){
+  const c=byId(editId); if(!c)return;
+  const ok=await uiConfirm({
+    title:'Delete this case?',
+    message:'“'+c.name+'” will be removed permanently from the tracker.',
+    okText:'Delete', danger:true
+  });
+  if(!ok)return;
+  const prev=snapCases();
+  cases=cases.filter(x=>x.id!==editId);
+  editId=null; saveCases(); closeSheet(); render();
+  offerUndo(prev,'Case deleted');
 }
 
 function saveCase(){
@@ -2222,6 +2215,22 @@ function saveCase(){
     if(!dt){toast('Enter date of admission','warn');return;}
     Object.assign(f,{regId:$('fRegC').value.trim(),sent:dt});
     newStatus='open';
+  }
+
+  /* duplicate guard — same Reg ID *and* same admission date */
+  const admDateOf=c=>c.cat==='international'
+    ? (c.admitTs?iso(new Date(c.admitTs)):'')
+    : (c.sent||'');
+  const newReg=(f.regId||'').trim().toLowerCase();
+  const newDate=admDateOf(f);
+  if(newReg&&newDate){
+    const dup=cases.find(c=>c.id!==editId
+      && String(c.regId||'').trim().toLowerCase()===newReg
+      && admDateOf(c)===newDate);
+    if(dup){
+      toast('Already exists — same Reg ID and admission date','warn');
+      return;
+    }
   }
 
   if(editId){
@@ -2404,6 +2413,7 @@ function init(){
   $('fabAdd').onclick=openSheet;
   $('btnCancel').onclick=closeSheet;
   $('btnSave').onclick=saveCase;
+  $('btnDelete').onclick=deleteEditingCase;
   $('btnRef').onclick=openMenu;
 
   /* stat tiles jump to the matching tab */
@@ -2439,16 +2449,13 @@ function init(){
   /* reference menu + panels */
   $('miEnts').onclick=()=>{closeMenu();openEnts();};
   $('miCos').onclick=()=>{closeMenu();openCos();};
-  $('miImport').onclick=()=>{closeMenu();importSeedPatients();};
   $('acctVer').textContent='MediTrack '+APP_VERSION;
 
   /* left drawer */
   $('btnMenu').onclick=openDrawer;
   $('drawerBg').onclick=closeDrawer;
-  $('dwScan').onclick=openScan;
   $('dwMail').onclick=openMailApp;
   $('dwTasks').onclick=toggleTasks;
-  $('scanFile').onchange=e=>{ if(e.target.files&&e.target.files.length){ toast('Photo captured — attach it from your gallery'); e.target.value=''; } };
   handleAppFallback();
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
