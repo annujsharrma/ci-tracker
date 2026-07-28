@@ -395,6 +395,52 @@ a{-webkit-tap-highlight-color:transparent}
 .sync.warn{color:var(--warn);background:var(--warn-soft)}
 .sync.danger{color:var(--danger);background:var(--danger-soft)}
 .sync.muted{color:var(--muted);background:var(--surface-2)}
+
+/* ================================================================
+   Left slide-out drawer
+   ================================================================ */
+.brand{background:none;border:none;padding:0;cursor:pointer;text-align:left;
+  transition:transform var(--t-fast) var(--ease)}
+.brand:active{transform:scale(.96)}
+.drawerbg{position:fixed;inset:0;background:rgba(15,25,22,.44);z-index:30;
+  opacity:0;pointer-events:none;transition:opacity var(--t-med) ease}
+.drawerbg.open{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;left:0;bottom:0;width:82%;max-width:300px;z-index:31;
+  background:var(--surface);box-shadow:var(--sh-lg);overflow-y:auto;
+  padding:calc(18px + var(--safe-t)) 14px calc(20px + var(--safe-b));
+  transform:translateX(-102%);visibility:hidden;
+  transition:transform var(--t-med) var(--ease),visibility 0s linear var(--t-med);
+}
+.drawer.open{transform:none;visibility:visible;transition:transform var(--t-med) var(--ease)}
+.drawer-hd{display:flex;align-items:center;gap:11px;padding:4px 6px 16px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.drawer-hd img{width:42px;height:42px;border-radius:11px;box-shadow:var(--sh-sm)}
+.drawer-hd h2{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.drawer-hd .eyebrow{color:var(--muted)}
+.dw-item{
+  width:100%;display:flex;align-items:center;gap:12px;margin-bottom:6px;
+  padding:12px 12px;border-radius:var(--r-md);background:transparent;
+  font-size:14.5px;font-weight:700;color:var(--ink);text-align:left;min-height:50px;
+  transition:background var(--t-fast) ease,transform var(--t-fast) var(--ease);
+}
+.dw-item:hover{background:var(--surface-2)}
+.dw-item:active{transform:scale(.98)}
+.dw-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent);flex-shrink:0}
+.dw-item .chev{margin-left:auto;color:var(--faint);transition:transform var(--t-med) var(--ease)}
+.dw-item.open .chev{transform:rotate(180deg)}
+.tasks-reveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease)}
+.tasks-reveal.open{grid-template-rows:1fr}
+.tasks-wrap{overflow:hidden;min-height:0}
+.tasks-in{padding:2px 6px 10px}
+.tk{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:var(--r-sm);background:var(--bg);margin-bottom:6px}
+.tk-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px}
+.tk-t{font-size:13px;font-weight:600;line-height:1.35;color:var(--ink)}
+.tk-d{font-size:11px;color:var(--muted);margin-top:2px}
+.tk-d.over{color:var(--danger);font-weight:700}
+.tk-msg{font-size:12.5px;color:var(--muted);padding:8px 10px;line-height:1.5}
+.tk-btn{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--r-sm);
+  background:var(--surface);font-size:13px;font-weight:700;margin-top:4px;box-shadow:var(--sh-sm)}
 </style>
 </head>
 <body>
@@ -402,13 +448,13 @@ a{-webkit-tap-highlight-color:transparent}
 <div class="app">
   <header class="hero">
     <div class="hero-top">
-      <div class="brand">
+      <button class="brand" id="btnMenu" aria-label="Open menu">
         <img src="icon-192.png" alt="" class="brand-logo">
         <div>
           <div class="eyebrow">SGRH</div>
           <h1>MediTrack</h1>
         </div>
-      </div>
+      </button>
       <button class="iconbtn" id="btnRef" aria-label="Desk reference">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/></svg>
       </button>
@@ -448,6 +494,35 @@ a{-webkit-tap-highlight-color:transparent}
     </button>
   </div>
 </div>
+
+<!-- Left slide-out drawer -->
+<div class="drawerbg" id="drawerBg"></div>
+<aside class="drawer" id="drawer" aria-label="Menu">
+  <div class="drawer-hd">
+    <img src="icon-192.png" alt="">
+    <div><div class="eyebrow">SGRH</div><h2>MediTrack</h2></div>
+  </div>
+
+  <button class="dw-item" id="dwScan">
+    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M3 12h18"/></svg></span>
+    Scan
+  </button>
+
+  <button class="dw-item" id="dwMail">
+    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
+    Mail
+  </button>
+
+  <button class="dw-item" id="dwTasks">
+    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8 2 2 4-4"/><path d="m3 17 2 2 4-4"/><path d="M13 9h8M13 18h8"/></svg></span>
+    Tasks
+    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="tasks-reveal" id="tasksReveal"><div class="tasks-wrap"><div class="tasks-in" id="tasksBody"></div></div></div>
+</aside>
+
+<!-- hidden camera input used as the Scan fallback -->
+<input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
 
 <!-- shared backdrop for bottom sheets -->
 <div class="sheetbg" id="sheetbg"></div>
@@ -647,13 +722,16 @@ a{-webkit-tap-highlight-color:transparent}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
+<!-- Google Identity Services (used for Google Tasks sign-in) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <script>
 'use strict';
 
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v27';
+const APP_VERSION='v28';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -1869,6 +1947,151 @@ function checkNotify(){
 }
 
 /* ================================================================
+   Left drawer: Scan · Mail · Tasks
+   ================================================================ */
+function openDrawer(){ $('drawer').classList.add('open'); $('drawerBg').classList.add('open'); }
+function closeDrawer(){ $('drawer').classList.remove('open'); $('drawerBg').classList.remove('open'); }
+
+/* --- Scan: try a scanner app on Android, fall back to the camera --- */
+const SCAN_PKGS=['com.adobe.scan.android','com.google.android.apps.docs'];
+function openScan(){
+  closeDrawer();
+  if(!/Android/i.test(navigator.userAgent)){ $('scanFile').click(); return; }
+  let left=false;
+  const onHide=()=>{ if(document.hidden)left=true; };
+  document.addEventListener('visibilitychange',onHide);
+  try{
+    location.href='intent:#Intent;package='+SCAN_PKGS[0]+
+      ';action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;end';
+  }catch(e){}
+  setTimeout(()=>{
+    document.removeEventListener('visibilitychange',onHide);
+    if(!left){ $('scanFile').click(); }   // scanner app not available → camera
+  },1200);
+}
+
+/* --- Mail: open the phone's mail app --- */
+function openMailApp(){ closeDrawer(); location.href='mailto:'; }
+
+/* ================================================================
+   Google Tasks (read-only) — pending tasks in the drawer
+   ================================================================ */
+const GTASKS_CLIENT_ID='';                       // set once configured in Google Cloud
+const GTASKS_KEY='ci_gtasks_client_id';
+const GTASKS_SCOPE='https://www.googleapis.com/auth/tasks.readonly';
+let gToken=null, gTokenExp=0, gTokenClient=null, tasksOpen=false;
+
+const gClientId=()=>GTASKS_CLIENT_ID||localStorage.getItem(GTASKS_KEY)||'';
+
+function tasksMsg(html){ $('tasksBody').innerHTML=html; }
+
+function toggleTasks(){
+  tasksOpen=!tasksOpen;
+  $('tasksReveal').classList.toggle('open',tasksOpen);
+  $('dwTasks').classList.toggle('open',tasksOpen);
+  if(tasksOpen)refreshTasks();
+}
+
+function refreshTasks(){
+  const cid=gClientId();
+  if(!cid){
+    tasksMsg('<div class="tk-msg">Google Tasks isn’t connected yet.</div>'+
+      '<button class="tk-btn" id="tkSetup">Connect Google Tasks</button>');
+    $('tkSetup').onclick=setupTasks;
+    return;
+  }
+  if(typeof google==='undefined'||!google.accounts||!google.accounts.oauth2){
+    tasksMsg('<div class="tk-msg">Couldn’t load Google sign-in — check your connection.</div>');
+    return;
+  }
+  if(gToken&&Date.now()<gTokenExp){ fetchTasks(); return; }
+  tasksMsg('<div class="tk-msg">Connecting…</div>');
+  try{
+    gTokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:cid, scope:GTASKS_SCOPE,
+      callback:(resp)=>{
+        if(resp&&resp.access_token){
+          gToken=resp.access_token;
+          gTokenExp=Date.now()+((resp.expires_in||3600)-60)*1000;
+          fetchTasks();
+        }else{
+          tasksMsg('<div class="tk-msg">Sign-in was cancelled.</div>'+
+            '<button class="tk-btn" id="tkRetry">Try again</button>');
+          const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
+        }
+      },
+      error_callback:()=>{
+        tasksMsg('<div class="tk-msg">Couldn’t sign in to Google Tasks.</div>'+
+          '<button class="tk-btn" id="tkRetry">Try again</button>');
+        const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
+      }
+    });
+    gTokenClient.requestAccessToken({prompt:''});
+  }catch(e){
+    tasksMsg('<div class="tk-msg">Google Tasks setup looks invalid. Re-enter the Client ID.</div>'+
+      '<button class="tk-btn" id="tkSetup">Change Client ID</button>');
+    const b=$('tkSetup'); if(b)b.onclick=setupTasks;
+  }
+}
+
+async function setupTasks(){
+  const v=await uiPrompt({
+    title:'Connect Google Tasks',
+    message:'Paste the OAuth Client ID from your Google Cloud project.',
+    placeholder:'…apps.googleusercontent.com', okText:'Save'
+  });
+  if(v===null)return;
+  const id=v.trim();
+  if(!id){toast('Enter a Client ID','warn');return;}
+  try{localStorage.setItem(GTASKS_KEY,id);}catch(e){}
+  gToken=null; gTokenExp=0;
+  toast('Google Tasks connected');
+  refreshTasks();
+}
+
+async function gapi(url){
+  const r=await fetch(url,{headers:{Authorization:'Bearer '+gToken}});
+  if(r.status===401){ gToken=null; gTokenExp=0; throw {code:401}; }
+  if(!r.ok) throw {code:r.status};
+  return r.json();
+}
+
+async function fetchTasks(){
+  tasksMsg('<div class="tk-msg">Loading tasks…</div>');
+  try{
+    const lists=await gapi('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=20');
+    const all=[];
+    for(const l of (lists.items||[])){
+      const t=await gapi('https://tasks.googleapis.com/tasks/v1/lists/'+encodeURIComponent(l.id)+
+        '/tasks?showCompleted=false&maxResults=100');
+      (t.items||[]).forEach(x=>{ if(x.title&&x.title.trim())all.push(x); });
+    }
+    if(!all.length){ tasksMsg('<div class="tk-msg">No pending tasks. 🎉</div>'); return; }
+    all.sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+    const html=all.map(t=>{
+      let due='';
+      if(t.due){
+        const d=t.due.slice(0,10);
+        const over=daysSince(d)>0;
+        due='<div class="tk-d'+(over?' over':'')+'">'+(over?'Overdue · ':'Due ')+fmt(d)+'</div>';
+      }
+      return '<div class="tk"><span class="tk-dot"></span><div><div class="tk-t">'+esc(t.title.trim())+'</div>'+due+'</div></div>';
+    }).join('');
+    tasksMsg(html+'<button class="tk-btn" id="tkRefresh">Refresh</button>');
+    const b=$('tkRefresh'); if(b)b.onclick=()=>{gToken&&fetchTasks();};
+  }catch(e){
+    if(e&&e.code===401){ refreshTasks(); return; }
+    if(e&&e.code===403){
+      tasksMsg('<div class="tk-msg">Access denied — enable the Google Tasks API for this project and allow this account.</div>');
+      return;
+    }
+    tasksMsg('<div class="tk-msg">Couldn’t load tasks. Check your connection and try again.</div>'+
+      '<button class="tk-btn" id="tkRetry">Try again</button>');
+    const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
+  }
+}
+
+/* ================================================================
    Bottom sheets & backdrop
    ================================================================ */
 function syncBackdrop(){
@@ -2132,6 +2355,7 @@ function setTab(t){
    ================================================================ */
 function closeTopOverlay(){
   if($('dlgBox').classList.contains('open')){ dlgClose(dlgHasInput?null:false); return true; }
+  if($('drawer').classList.contains('open')){ closeDrawer(); return true; }
   if($('coPanel').classList.contains('open')){ closeCos(); return true; }
   if($('entPanel').classList.contains('open')){ closeEnts(); return true; }
   if($('sheet').classList.contains('open')){ closeSheet(); return true; }
@@ -2195,6 +2419,14 @@ function init(){
   $('miCos').onclick=()=>{closeMenu();openCos();};
   $('miImport').onclick=()=>{closeMenu();importSeedPatients();};
   $('acctVer').textContent='MediTrack '+APP_VERSION;
+
+  /* left drawer */
+  $('btnMenu').onclick=openDrawer;
+  $('drawerBg').onclick=closeDrawer;
+  $('dwScan').onclick=openScan;
+  $('dwMail').onclick=openMailApp;
+  $('dwTasks').onclick=toggleTasks;
+  $('scanFile').onchange=e=>{ if(e.target.files&&e.target.files.length){ toast('Photo captured — attach it from your gallery'); e.target.value=''; } };
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
   $('entAdd').onclick=addCompany;
