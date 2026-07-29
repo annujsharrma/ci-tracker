@@ -42,6 +42,7 @@
    Base
    ================================================================ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}   /* author display rules must not defeat the hidden attribute */
 html{-webkit-text-size-adjust:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -441,6 +442,16 @@ a{-webkit-tap-highlight-color:transparent}
 .tk-msg{font-size:12.5px;color:var(--muted);padding:8px 10px;line-height:1.5}
 .tk-btn{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--r-sm);
   background:var(--surface);font-size:13px;font-weight:700;margin-top:4px;box-shadow:var(--sh-sm)}
+
+/* bulk add */
+.bulk-help{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 13px;margin-bottom:12px}
+.bulk-help b{display:block;font-size:12.5px;margin-bottom:7px;color:var(--ink)}
+.bulk-help code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;line-height:1.6;color:var(--accent);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 10px;
+  overflow-x:auto;white-space:pre;margin-bottom:8px}
+.bulk-help p{font-size:11.5px;color:var(--muted);line-height:1.55}
+#bulkText{min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -502,6 +513,11 @@ a{-webkit-tap-highlight-color:transparent}
     <img src="icon-192.png" alt="">
     <div><div class="eyebrow">SGRH</div><h2>MediTrack</h2></div>
   </div>
+
+  <button class="dw-item" id="dwBulk">
+    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+    Bulk add
+  </button>
 
   <button class="dw-item" id="dwMail">
     <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
@@ -573,6 +589,27 @@ a{-webkit-tap-highlight-color:transparent}
     <button class="btn danger" id="btnDelete" hidden>Delete</button>
     <button class="btn" id="btnCancel">Cancel</button>
     <button class="btn pri" id="btnSave">Save case</button>
+  </div>
+</div>
+
+<!-- Bulk add sheet -->
+<div class="sheet" id="bulkSheet" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
+  <h2 id="bulkTitle">Bulk add patients</h2>
+  <div class="bulk-help">
+    <b>One patient per line, fields separated by |</b>
+    <code>Reg No | Name | Company | Emp ID | Ward | Phone | Doctor | Admitted On | Approval Days | Valid Till</code>
+    <p>Dates as DD/MM/YYYY. Leave a field empty if unknown but keep the | separators.
+       Emp ID defaults to 1234. With a Valid Till the patient goes to <b>Open</b> as approved;
+       without it, to <b>Domestic</b> as awaiting approval. Duplicates (same Reg No + admission date) are skipped.</p>
+  </div>
+  <button class="btn" id="bulkCopy" style="margin-bottom:12px;">Copy prompt for chatbot</button>
+  <div class="fld">
+    <label for="bulkText">Paste rows</label>
+    <textarea id="bulkText" placeholder="3782947 | Rebati Kumar Saikia | BCPL | 1234 | IMat-3 | 9678001199 | Dr. Ganesh Raj Shivnani | 25/07/2026 | 7 | 31/07/2026"></textarea>
+  </div>
+  <div class="savebar">
+    <button class="btn" id="bulkCancel">Cancel</button>
+    <button class="btn pri" id="bulkSubmit">Add patients</button>
   </div>
 </div>
 
@@ -719,7 +756,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v30';
+const APP_VERSION='v32';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -1954,6 +1991,108 @@ function launchApp(pkg,failParam){
   setTimeout(()=>a.remove(),3000);
 }
 
+/* ================================================================
+   Bulk add — paste pipe-separated rows to create many cases at once
+   ================================================================ */
+const BULK_PROMPT=`Extract every patient from the attached document and output ONLY plain text.
+One patient per line, fields separated by the pipe character | in exactly this order:
+
+Reg No | Name | Company | Emp ID | Ward | Phone | Doctor | Admitted On | Approval Days | Valid Till
+
+Rules:
+- Output only data lines. No header row, no numbering, no bullets, no commentary, no code fences.
+- Every line must have exactly 10 fields. If a value is missing, leave it empty but keep the | separators.
+- Dates must be DD/MM/YYYY.
+- Approval Days must be a plain number.
+- Company should be the short acronym (e.g. IOCL, DMRC, NTPC, ONGC, BPCL).
+- Skip any patient who already has a discharge date.`;
+
+/* accepts DD/MM/YYYY, DD-MM-YYYY or YYYY-MM-DD -> ISO, else '' */
+function parseAnyDate(s){
+  s=(s||'').trim(); if(!s)return '';
+  let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m)return `${m[1]}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;
+  m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if(m)return `${m[3]}-${String(+m[2]).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;
+  return '';
+}
+
+function parseBulk(text){
+  const rows=[], errors=[];
+  (text||'').split(/\r?\n/).forEach((line,i)=>{
+    let t=line.trim();
+    if(!t||/^[-=|\s]+$/.test(t))return;                 // blank / separator line
+    if(/^reg\s*no\s*\|/i.test(t))return;                // header row
+    t=t.replace(/^\s*\d+[.)]\s+/,'');                   // strip "1. " numbering
+    const p=t.split('|').map(x=>x.trim());
+    if(p.length<2){errors.push(`Line ${i+1}: not enough fields`);return;}
+    const [regId,name,co,emp,ward,phone,dr,adm,days,till]=p;
+    if(!name){errors.push(`Line ${i+1}: missing name`);return;}
+    const sent=parseAnyDate(adm);
+    if(!sent){errors.push(`Line ${i+1} (${name}): admission date must be DD/MM/YYYY`);return;}
+    const validTill=parseAnyDate(till);
+    const nDays=parseInt(days,10);
+    rows.push({
+      regId:(regId||'').trim(), name, co:(co||'').trim().toUpperCase(),
+      emp:(emp||'').trim()||'1234', ward:(ward||'').trim(), phone:(phone||'').trim(),
+      dr:(dr||'').trim(), sent, apprDays:(nDays>0?nDays:null), validTill
+    });
+  });
+  return {rows,errors};
+}
+
+function openBulk(){ closeDrawer(); $('bulkText').value=''; $('bulkSheet').classList.add('open'); syncBackdrop(); }
+function closeBulk(){ $('bulkSheet').classList.remove('open'); syncBackdrop(); }
+
+async function submitBulk(){
+  const {rows,errors}=parseBulk($('bulkText').value);
+  if(!rows.length){
+    toast(errors.length?errors[0]:'Nothing to add — paste some rows first','warn');
+    return;
+  }
+  // skip duplicates: same Reg No + admission date (existing cases and within the batch)
+  const key=r=>String(r.regId||'').trim().toLowerCase()+'@'+r.sent;
+  const have=new Set(cases.map(c=>String(c.regId||'').trim().toLowerCase()+'@'+
+    (c.cat==='international'?(c.admitTs?iso(new Date(c.admitTs)):''):(c.sent||''))));
+  const seen=new Set(), add=[];
+  let dupes=0;
+  rows.forEach(r=>{
+    const k=key(r);
+    if(r.regId&&(have.has(k)||seen.has(k))){dupes++;return;}
+    seen.add(k); add.push(r);
+  });
+  if(!add.length){toast(`All ${dupes} row${dupes===1?'':'s'} already exist`,'warn');return;}
+
+  let msg=`Add ${add.length} patient${add.length===1?'':'s'}?`;
+  if(dupes)msg+=` ${dupes} duplicate${dupes===1?'':'s'} will be skipped.`;
+  if(errors.length)msg+=` ${errors.length} line${errors.length===1?'':'s'} could not be read and will be ignored.`;
+  const ok=await uiConfirm({title:'Bulk add',message:msg,okText:'Add'});
+  if(!ok)return;
+
+  const prev=snapCases();
+  add.forEach(r=>cases.push({
+    id:uid(),cat:'company',status:r.validTill?'approved':'pending',
+    name:r.name,regId:r.regId,emp:r.emp,co:r.co,dr:r.dr,
+    sent:r.sent,validTill:r.validTill||null,apprDays:r.apprDays,
+    days:r.validTill?null:(r.apprDays||null),
+    email:'',phone:r.phone,notes:r.ward,
+    fu:[],snooze:null,notified:[],notifiedF:[]
+  }));
+  saveCases(); closeBulk();
+  setTab(add.some(r=>r.validTill)?'open':'domestic');
+  offerUndo(prev,`Added ${add.length} patient${add.length===1?'':'s'}`+(dupes?` · ${dupes} skipped`:''));
+}
+
+async function copyBulkPrompt(){
+  try{
+    await navigator.clipboard.writeText(BULK_PROMPT);
+    toast('Prompt copied — paste it with your PDF into a chatbot');
+  }catch(e){
+    $('bulkText').value=BULK_PROMPT;
+    toast('Copy failed — prompt placed in the box instead','warn');
+  }
+}
+
 /* --- Mail: open the Gmail inbox --- */
 function openMailApp(){
   closeDrawer();
@@ -2093,7 +2232,7 @@ async function fetchTasks(){
    Bottom sheets & backdrop
    ================================================================ */
 function syncBackdrop(){
-  const any=['sheet','dsheet','menuSheet','emailSheet'].some(id=>$(id).classList.contains('open'));
+  const any=['sheet','dsheet','menuSheet','emailSheet','bulkSheet'].some(id=>$(id).classList.contains('open'));
   $('sheetbg').classList.toggle('open',any);
 }
 function closeSheet(){
@@ -2392,6 +2531,7 @@ function closeTopOverlay(){
   if($('sheet').classList.contains('open')){ closeSheet(); return true; }
   if($('dsheet').classList.contains('open')){ closeDsheet(); return true; }
   if($('emailSheet').classList.contains('open')){ closeEmailSheet(); return true; }
+  if($('bulkSheet').classList.contains('open')){ closeBulk(); return true; }
   if($('menuSheet').classList.contains('open')){ closeMenu(); return true; }
   return false;
 }
@@ -2440,7 +2580,7 @@ function init(){
   });
 
   /* backdrop closes every open sheet */
-  $('sheetbg').onclick=()=>{closeSheet();closeDsheet();closeMenu();closeEmailSheet();};
+  $('sheetbg').onclick=()=>{closeSheet();closeDsheet();closeMenu();closeEmailSheet();closeBulk();};
 
   /* discharge sheet */
   $('dCancel').onclick=closeDsheet;
@@ -2454,8 +2594,12 @@ function init(){
   /* left drawer */
   $('btnMenu').onclick=openDrawer;
   $('drawerBg').onclick=closeDrawer;
+  $('dwBulk').onclick=openBulk;
   $('dwMail').onclick=openMailApp;
   $('dwTasks').onclick=toggleTasks;
+  $('bulkCancel').onclick=closeBulk;
+  $('bulkSubmit').onclick=submitBulk;
+  $('bulkCopy').onclick=copyBulkPrompt;
   handleAppFallback();
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
