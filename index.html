@@ -452,6 +452,9 @@ a{-webkit-tap-highlight-color:transparent}
   overflow-x:auto;white-space:pre;margin-bottom:8px}
 .bulk-help p{font-size:11.5px;color:var(--muted);line-height:1.55}
 #bulkText{min-height:150px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+.bulk-count{font-size:12px;font-weight:700;color:var(--muted);margin-top:7px;min-height:16px}
+.bulk-count.ok{color:var(--accent)}
+.bulk-count.bad{color:var(--warn)}
 </style>
 </head>
 <body>
@@ -596,16 +599,18 @@ a{-webkit-tap-highlight-color:transparent}
 <div class="sheet" id="bulkSheet" role="dialog" aria-modal="true" aria-labelledby="bulkTitle">
   <h2 id="bulkTitle">Bulk add patients</h2>
   <div class="bulk-help">
-    <b>One patient per line, fields separated by |</b>
+    <b>One patient per line — paste as many patients as you like (no limit).</b>
     <code>Reg No | Name | Company | Emp ID | Ward | Phone | Doctor | Admitted On | Approval Days | Valid Till</code>
-    <p>Dates as DD/MM/YYYY. Leave a field empty if unknown but keep the | separators.
-       Emp ID defaults to 1234. With a Valid Till the patient goes to <b>Open</b> as approved;
-       without it, to <b>Domestic</b> as awaiting approval. Duplicates (same Reg No + admission date) are skipped.</p>
+    <p>Each line has these 10 fields separated by |. Dates as DD/MM/YYYY. Leave a field empty if
+       unknown but keep the | separators. Emp ID defaults to 1234. With a Valid Till the patient goes
+       to <b>Open</b> as approved; without it, to <b>Domestic</b> as awaiting approval.
+       Duplicates (same Reg No + admission date) are skipped.</p>
   </div>
   <button class="btn" id="bulkCopy" style="margin-bottom:12px;">Copy prompt for chatbot</button>
   <div class="fld">
     <label for="bulkText">Paste rows</label>
     <textarea id="bulkText" placeholder="3782947 | Rebati Kumar Saikia | BCPL | 1234 | IMat-3 | 9678001199 | Dr. Ganesh Raj Shivnani | 25/07/2026 | 7 | 31/07/2026"></textarea>
+    <div class="bulk-count" id="bulkCount"></div>
   </div>
   <div class="savebar">
     <button class="btn" id="bulkCancel">Cancel</button>
@@ -756,7 +761,7 @@ a{-webkit-tap-highlight-color:transparent}
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v32';
+const APP_VERSION='v33';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -2005,7 +2010,10 @@ Rules:
 - Dates must be DD/MM/YYYY.
 - Approval Days must be a plain number.
 - Company should be the short acronym (e.g. IOCL, DMRC, NTPC, ONGC, BPCL).
-- Skip any patient who already has a discharge date.`;
+- Skip any patient who already has a discharge date.
+- Include EVERY remaining patient, however many there are. Do not truncate, summarise,
+  sample, or stop early, and do not write "..." or "and so on". If the list is long,
+  keep going until the last patient is listed.`;
 
 /* accepts DD/MM/YYYY, DD-MM-YYYY or YYYY-MM-DD -> ISO, else '' */
 function parseAnyDate(s){
@@ -2041,8 +2049,20 @@ function parseBulk(text){
   return {rows,errors};
 }
 
-function openBulk(){ closeDrawer(); $('bulkText').value=''; $('bulkSheet').classList.add('open'); syncBackdrop(); }
+function openBulk(){ closeDrawer(); $('bulkText').value=''; updateBulkCount(); $('bulkSheet').classList.add('open'); syncBackdrop(); }
 function closeBulk(){ $('bulkSheet').classList.remove('open'); syncBackdrop(); }
+
+/* live "N patients ready" readout under the textarea */
+function updateBulkCount(){
+  const el=$('bulkCount'); if(!el)return;
+  const raw=$('bulkText').value;
+  if(!raw.trim()){ el.textContent=''; el.className='bulk-count'; return; }
+  const {rows,errors}=parseBulk(raw);
+  let msg=`${rows.length} patient${rows.length===1?'':'s'} ready`;
+  if(errors.length)msg+=` · ${errors.length} line${errors.length===1?'':'s'} unreadable`;
+  el.textContent=msg;
+  el.className='bulk-count '+(errors.length?'bad':(rows.length?'ok':''));
+}
 
 async function submitBulk(){
   const {rows,errors}=parseBulk($('bulkText').value);
@@ -2600,6 +2620,7 @@ function init(){
   $('bulkCancel').onclick=closeBulk;
   $('bulkSubmit').onclick=submitBulk;
   $('bulkCopy').onclick=copyBulkPrompt;
+  $('bulkText').oninput=updateBulkCount;
   handleAppFallback();
   $('entBack').onclick=closeEnts;
   $('coBack').onclick=closeCos;
