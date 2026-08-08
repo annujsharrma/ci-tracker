@@ -430,18 +430,6 @@ a{-webkit-tap-highlight-color:transparent}
   background:var(--accent-soft);color:var(--accent);flex-shrink:0}
 .dw-item .chev{margin-left:auto;color:var(--faint);transition:transform var(--t-med) var(--ease)}
 .dw-item.open .chev{transform:rotate(180deg)}
-.tasks-reveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease)}
-.tasks-reveal.open{grid-template-rows:1fr}
-.tasks-wrap{overflow:hidden;min-height:0}
-.tasks-in{padding:2px 6px 10px}
-.tk{display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:var(--r-sm);background:var(--bg);margin-bottom:6px}
-.tk-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:6px}
-.tk-t{font-size:13px;font-weight:600;line-height:1.35;color:var(--ink)}
-.tk-d{font-size:11px;color:var(--muted);margin-top:2px}
-.tk-d.over{color:var(--danger);font-weight:700}
-.tk-msg{font-size:12.5px;color:var(--muted);padding:8px 10px;line-height:1.5}
-.tk-btn{width:100%;min-height:42px;border:1px solid var(--line);border-radius:var(--r-sm);
-  background:var(--surface);font-size:13px;font-weight:700;margin-top:4px;box-shadow:var(--sh-sm)}
 
 /* bulk add */
 .bulk-help{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 13px;margin-bottom:12px}
@@ -527,12 +515,6 @@ a{-webkit-tap-highlight-color:transparent}
     Mail
   </button>
 
-  <button class="dw-item" id="dwTasks">
-    <span class="dw-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 8 2 2 4-4"/><path d="m3 17 2 2 4-4"/><path d="M13 9h8M13 18h8"/></svg></span>
-    Tasks
-    <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-  </button>
-  <div class="tasks-reveal" id="tasksReveal"><div class="tasks-wrap"><div class="tasks-in" id="tasksBody"></div></div></div>
 </aside>
 
 <!-- shared backdrop for bottom sheets -->
@@ -752,16 +734,13 @@ a{-webkit-tap-highlight-color:transparent}
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
-<!-- Google Identity Services (used for Google Tasks sign-in) -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-
 <script>
 'use strict';
 
 /* ================================================================
    Constants & seed data
    ================================================================ */
-const APP_VERSION='v34';
+const APP_VERSION='v35';
 const CASES_KEY='ci_cases_v2', OLD_KEY='ci_tracker_cases_v1', ENT_KEY='ci_entitlements_v1', CO_KEY='ci_companies_v1';
 const SNOOZE_DAYS=2, WINDOW_H=24;
 const DESK_PHONES='+91 9560433511 / 011-42253036 / 3037';
@@ -883,6 +862,102 @@ const CO_SEED=[
 ["UPPCL","Uttar Pradesh Power Corporation Limited","N","Not Credit, "+I1,C_OPD],
 ["WHO","World Health Organization","Y","Credit. Discount not applicable on IPD Billing excluding medical and non-medical consumables and outsourced services.","NO"]
 ];
+
+/* Time period (MOU validity) + contact persons, from the PSU master sheet */
+const CO_EXTRA={
+"AAI":["31.03.2027","G.D Pandey CHQ, Radhey Shyam RHQ|NR, Shekhar RHQ|NR"],
+"AIRTEL":["15-06/2026-15/06/2028","Ms.Arantxa"],
+"AKU":["31.03.2028",""],
+"BALCO":["",""],
+"BCPL":["31.03.2020","ASHA DUTTA, JAYANT BARUAH, BHARTI KHATRI"],
+"BEL":["30.06.2027","Dr. Namrata Chaudhary (CMO), Dr. Vikas Rai"],
+"BEML":["OPEN MOU","Mr. Khakha (HR-Delhi Office), R.N PANDEY"],
+"BHEL":["30.08.2024","Dr. Sangeeta Singhal (CMO-Delhi), Dr. NITIN OMER (Delhi), Rupesh, Raj Kishore (Haridwar)"],
+"BHUTAN":["Open MOU","SONAM TSHEWANG BHUTAN"],
+"BLCL":["11.01.2027","Kartik Varun Chadha"],
+"BPCL":["31.05.2026","Jasreen Singh, BHARTI KHATRI"],
+"CBOI":["20.12.2027","Mr. Nites Mohan"],
+"CONCOR":["30.05.2027","Abheet Singh"],
+"CPCL":["",""],
+"CWC":["31.03.2027","JATIN ALAG, Harpreet, Ambrish Gautam"],
+"DFCCIL":["09.05.2027","Kamna Thakur"],
+"DHC":["31.12.2027","Mr. S.P Singh Premi, Mr D.R. Chaudhary"],
+"DMRC":["17.07.2026","Satywan Singh, Santosh Kumar Bharti"],
+"DU":["31.12.2024","Professor Deepak Pental"],
+"DZPL":["30.04.2027","Mr. Rajeev Rana, Mr. Piyush"],
+"ECI":["Open MOU","A.N. DAS, Mr Mukesh Kumar"],
+"EDCIL":["12.11.2026","SONI MEHTA, RAJESH KUMAR, MR AVINASH KUMAR"],
+"EIL":["Open MOU","HARISH KHURANA, PK Pankaj, Rajni Suri"],
+"EPIL":["2015-2016","Shamboo Nath Thapliyal"],
+"GAIL":["31.03.2029","S.K SALUJA, GURMEET BAWA, SYEDNUVED"],
+"GMRL":["30/06/2026 to 29/06/2029","Ms. Paylal Bhatt (HR)"],
+"HINDU":["05.01.2026 to 01.04.2026",""],
+"HMC":["2012","Mr.Sandeep Vats, Dr Rakesh Sharma"],
+"HPCL":["2007","TARA CHAND, RAJULA SAXENA"],
+"HSCC":["2015-2026","BISHWAJEET NAYAK"],
+"HUDCO":["31.03.2026","ASHUTOSH, NARESH KUMAR"],
+"ICSI":["24.03.2027","Mr. Vishal Bhasin"],
+"IFCI":["2019","HIMANSHU SHARMA"],
+"IFFCO":["Open MOU","Dr. Prashant Aggarwal, GOVIND SINGH"],
+"IGNOU":["31.03.2026",""],
+"IOCL":["31.03.2026","NITIN, RAJAKSHMI, RAJKUMAR VERMA, CHANDRASHEKHAR, NARENDER SAINI"],
+"IRCTC":["09.02.2027","ASHISH DUREJA"],
+"IREDA":["01.01.2027 to 31.12.2028","PR KUMAR LAL, Durre Shahwar, Sarabjit Kaur"],
+"IRFCL":["03/02/2026 - 03/02/2028","Ramesh Kumar(Dy. Manager (Admin).), Satish Chandra Srivastava (Jr. Manager (Admin))"],
+"ITI":["2015-2016",""],
+"ITPO":["","ABHISHEK, BIMLA PANDEY"],
+"JKC":["31.03.2027","Vikram Kumar, Navneet Bhardwaj"],
+"JPC":["2021-2022","Sunil Gupta"],
+"KIOCL":["31.03.2027","DR M SRINIVASULA, MUKESH"],
+"KRIBHCO":["2015-2016","RK JAIN"],
+"MARUTI":["31.03.2027","NEERAJ KHATUJA"],
+"MEPL":["05.04.2027","Ms. Natasha Malik"],
+"MSTC":["22.01.2027",""],
+"NABARD":["Open MOU","POONAM HARJAI"],
+"NALCO":["31.03.2026","ZIGMA, RAKESH CHOUDHARY, SAURAV DAS"],
+"NBCC":["31.01.2028","Shekhar Mahajan"],
+"NCDC":["Open MOU (2015-2016)","MAHENDRA SINGH GARVA"],
+"NCRTC":["31.08.2024","Bhumika Maheshwari"],
+"NHAI":["14.05.2026","TARUN, MANOJ PANDE"],
+"NHPC":["31.03.2027","Mrs Stephnie Lakra"],
+"NHSRCL":["Open MOU","MONA SINGH"],
+"NIFT":["31.03.2024","Anju Sharma"],
+"NLCL":["2015-2016","DINESH KUMAR MITTAL REGIONAL MANAGER"],
+"NPCIL":["2022-2025","MANJU SATI"],
+"NRL":["01/04/2025 - 31/03/2027","PORINITA DEVI, GAYATRI SANMAH"],
+"NTPC":["31.05.2026","SANJEEV KUMAR RAI, SUSHMITA"],
+"NTPC SAIL":["","Ms. Rashmi Shukla"],
+"OIL":["31.03.2027","ABHISHEK DUBEY"],
+"ONGC":["31.03.2026","M S TOLIA, MANJU BALA"],
+"PDIL":["28.02.2027","Mr. Vikas Gaur Addl. General Manager (P&A)"],
+"PEC":["31.03.2027","MONIKA BOSE"],
+"PFCIL":["1/02/2025 to 31/01/2027","Sangeeta Wadhwan, Latika Kushwaha"],
+"PGCIL":["Open MOU(Last email on 27/11/2025)","SHITANSHU SHRAMA"],
+"PHC":["31.03.2027","Vinay"],
+"PLNG":["31.03.2024","AAKRITI GUPTA"],
+"POSOCO":["2022","Niten Sharma, Lakhbir Kaur Chief Manager"],
+"PTCUL":["31.03.2026","Mr.Ashok Kumar Juyal"],
+"RAILTEL":["31.03.2029","AJAY KUMAR, C.L BHARDWAJ, NIKITA SHARMA, Vaibhav Dogra"],
+"RBI":["10.04.2026","PRABHJOT Kaur"],
+"REC":["Open MOU","Abhishek, Jitendra, ANUP BANERJEE, CHARANJIT"],
+"RIL":["2019","Mr. Virant Harnal"],
+"RITES":["01.01.2026 to 01.04.2027","Mr Nitesh Mohan"],
+"RVNL":["07/03/2025 to 28/02/2028","Mr Sharad Kumar"],
+"SAIL":["Open MOU(Last letter dated2019)","B K SRIVASTAVA, DR SHARMA, PUSHPENDER VIR"],
+"SC":["",""],
+"SCI":["28.02.2027","ASHOK KUMAR Regional Chief Manager, Mrs. Aakansha Aggarwal (Sr. Manager)"],
+"SCL":["31.03.2025",""],
+"SIDBI":["2023","Dr.V.K Goel, MR MILIND"],
+"SJVN":["Ongoing MOU (2027)","NEENA CHAUHAN, ANSHUL, PUSHPENDER"],
+"TCIL":["01/09/2024 - 01/09/2026",""],
+"TCL":["","RAHUL, Shweta Tiwati, MILIND CHALKE"],
+"THDCL":["01/04/2025 - 31/03/2027","K SURYA MOULI, RD MAMGAIN"],
+"UBI":["23/02/2026 - 22/02/2028","Mr.Bogie Rajeev (General Secretary)"],
+"UJVN":["31.03.2027","ASHISH JAIN"],
+"UPCL":["31.03.2027","Ashish Kumar Jain"],
+"UPPCL":["30.04.2026","DINESH CHANDRA"],
+"WHO":["2019","Nikhil Gupta, Shyam Lanka, Sne Talwar"],
+};
 
 /* ================================================================
    App state
@@ -1173,7 +1248,20 @@ function load(){
   try{ents=JSON.parse(localStorage.getItem(ENT_KEY)||'null')||null;}catch(e){ents=null;}
   if(!ents){ents=Object.assign({},ENT_SEED);saveEnts();}
   try{cos=JSON.parse(localStorage.getItem(CO_KEY)||'null')||null;}catch(e){cos=null;}
-  if(!cos){cos={};CO_SEED.forEach(r=>cos[r[0]]={name:r[1],emp:r[2],ipd:r[3],opd:r[4]});saveCos();}
+  if(!cos){
+    cos={};
+    CO_SEED.forEach(r=>{const x=CO_EXTRA[r[0]]||['',''];cos[r[0]]={name:r[1],emp:r[2],ipd:r[3],opd:r[4],tp:x[0],cp:x[1]};});
+    saveCos();
+  }else{
+    /* backfill time period / contact persons for desks saved before these fields existed */
+    let filled=false;
+    Object.keys(cos).forEach(a=>{
+      const c=cos[a], x=CO_EXTRA[a];
+      if(c.tp===undefined){c.tp=x?x[0]:'';filled=true;}
+      if(c.cp===undefined){c.cp=x?x[1]:'';filled=true;}
+    });
+    if(filled)saveCos();
+  }
   render(); checkNotify();
 }
 const SAVE_ERR='Couldn’t save — device storage may be full.';
@@ -1977,7 +2065,7 @@ function checkNotify(){
 }
 
 /* ================================================================
-   Left drawer: Scan · Mail · Tasks
+   Left drawer: Bulk add · Mail
    ================================================================ */
 function openDrawer(){ $('drawer').classList.add('open'); $('drawerBg').classList.add('open'); }
 function closeDrawer(){ $('drawer').classList.remove('open'); $('drawerBg').classList.remove('open'); }
@@ -2131,124 +2219,6 @@ function handleAppFallback(){
 }
 
 /* ================================================================
-   Google Tasks (read-only) — pending tasks in the drawer
-   ================================================================ */
-const GTASKS_CLIENT_ID='';                       // set once configured in Google Cloud
-const GTASKS_KEY='ci_gtasks_client_id';
-const GTASKS_SCOPE='https://www.googleapis.com/auth/tasks.readonly';
-let gToken=null, gTokenExp=0, gTokenClient=null, tasksOpen=false;
-
-const gClientId=()=>GTASKS_CLIENT_ID||localStorage.getItem(GTASKS_KEY)||'';
-
-function tasksMsg(html){ $('tasksBody').innerHTML=html; }
-
-function toggleTasks(){
-  tasksOpen=!tasksOpen;
-  $('tasksReveal').classList.toggle('open',tasksOpen);
-  $('dwTasks').classList.toggle('open',tasksOpen);
-  if(tasksOpen)refreshTasks();
-}
-
-function refreshTasks(){
-  const cid=gClientId();
-  if(!cid){
-    tasksMsg('<div class="tk-msg">Google Tasks isn’t connected yet.</div>'+
-      '<button class="tk-btn" id="tkSetup">Connect Google Tasks</button>');
-    $('tkSetup').onclick=setupTasks;
-    return;
-  }
-  if(typeof google==='undefined'||!google.accounts||!google.accounts.oauth2){
-    tasksMsg('<div class="tk-msg">Couldn’t load Google sign-in — check your connection.</div>');
-    return;
-  }
-  if(gToken&&Date.now()<gTokenExp){ fetchTasks(); return; }
-  tasksMsg('<div class="tk-msg">Connecting…</div>');
-  try{
-    gTokenClient=google.accounts.oauth2.initTokenClient({
-      client_id:cid, scope:GTASKS_SCOPE,
-      callback:(resp)=>{
-        if(resp&&resp.access_token){
-          gToken=resp.access_token;
-          gTokenExp=Date.now()+((resp.expires_in||3600)-60)*1000;
-          fetchTasks();
-        }else{
-          tasksMsg('<div class="tk-msg">Sign-in was cancelled.</div>'+
-            '<button class="tk-btn" id="tkRetry">Try again</button>');
-          const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
-        }
-      },
-      error_callback:()=>{
-        tasksMsg('<div class="tk-msg">Couldn’t sign in to Google Tasks.</div>'+
-          '<button class="tk-btn" id="tkRetry">Try again</button>');
-        const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
-      }
-    });
-    gTokenClient.requestAccessToken({prompt:''});
-  }catch(e){
-    tasksMsg('<div class="tk-msg">Google Tasks setup looks invalid. Re-enter the Client ID.</div>'+
-      '<button class="tk-btn" id="tkSetup">Change Client ID</button>');
-    const b=$('tkSetup'); if(b)b.onclick=setupTasks;
-  }
-}
-
-async function setupTasks(){
-  const v=await uiPrompt({
-    title:'Connect Google Tasks',
-    message:'Paste the OAuth Client ID from your Google Cloud project.',
-    placeholder:'…apps.googleusercontent.com', okText:'Save'
-  });
-  if(v===null)return;
-  const id=v.trim();
-  if(!id){toast('Enter a Client ID','warn');return;}
-  try{localStorage.setItem(GTASKS_KEY,id);}catch(e){}
-  gToken=null; gTokenExp=0;
-  toast('Google Tasks connected');
-  refreshTasks();
-}
-
-async function gapi(url){
-  const r=await fetch(url,{headers:{Authorization:'Bearer '+gToken}});
-  if(r.status===401){ gToken=null; gTokenExp=0; throw {code:401}; }
-  if(!r.ok) throw {code:r.status};
-  return r.json();
-}
-
-async function fetchTasks(){
-  tasksMsg('<div class="tk-msg">Loading tasks…</div>');
-  try{
-    const lists=await gapi('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=20');
-    const all=[];
-    for(const l of (lists.items||[])){
-      const t=await gapi('https://tasks.googleapis.com/tasks/v1/lists/'+encodeURIComponent(l.id)+
-        '/tasks?showCompleted=false&maxResults=100');
-      (t.items||[]).forEach(x=>{ if(x.title&&x.title.trim())all.push(x); });
-    }
-    if(!all.length){ tasksMsg('<div class="tk-msg">No pending tasks. 🎉</div>'); return; }
-    all.sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
-    const html=all.map(t=>{
-      let due='';
-      if(t.due){
-        const d=t.due.slice(0,10);
-        const over=daysSince(d)>0;
-        due='<div class="tk-d'+(over?' over':'')+'">'+(over?'Overdue · ':'Due ')+fmt(d)+'</div>';
-      }
-      return '<div class="tk"><span class="tk-dot"></span><div><div class="tk-t">'+esc(t.title.trim())+'</div>'+due+'</div></div>';
-    }).join('');
-    tasksMsg(html+'<button class="tk-btn" id="tkRefresh">Refresh</button>');
-    const b=$('tkRefresh'); if(b)b.onclick=()=>{gToken&&fetchTasks();};
-  }catch(e){
-    if(e&&e.code===401){ refreshTasks(); return; }
-    if(e&&e.code===403){
-      tasksMsg('<div class="tk-msg">Access denied — enable the Google Tasks API for this project and allow this account.</div>');
-      return;
-    }
-    tasksMsg('<div class="tk-msg">Couldn’t load tasks. Check your connection and try again.</div>'+
-      '<button class="tk-btn" id="tkRetry">Try again</button>');
-    const b=$('tkRetry'); if(b)b.onclick=refreshTasks;
-  }
-}
-
-/* ================================================================
    Bottom sheets & backdrop
    ================================================================ */
 function syncBackdrop(){
@@ -2295,7 +2265,7 @@ function renderCoList(filter){
         const nn=o.dataset.add.trim().toUpperCase();
         const dup=Object.keys(cos).concat(Object.keys(ents)).find(k=>k.toLowerCase()===nn.toLowerCase());
         if(dup){$('fCoSel').value=dup;}
-        else if(nn){cos[nn]={name:'',emp:'Y',ipd:'',opd:''};saveCos();$('fCoSel').value=nn;toast(nn+' added — fill its details in the PSU Master sheet');}
+        else if(nn){cos[nn]={name:'',emp:'Y',tp:'',ipd:'',opd:'',cp:''};saveCos();$('fCoSel').value=nn;toast(nn+' added — fill its details in the PSU Master sheet');}
       }else $('fCoSel').value=o.dataset.co;
       box.classList.remove('open');
     };
@@ -2476,7 +2446,7 @@ function renderCos(){
     const d=document.createElement('div'); d.className='ecard';
     d.innerHTML=`<button class="ehead"><span class="etitle"><span class="eac">${esc(a)}</span>${c.name?`<span class="enm">${esc(c.name)}</span>`:''}</span><span class="esub">${esc(c.emp||'')}</span>${IC.chev}</button>
       <div class="ereveal"><div class="ebody"><div class="ebody-in">
-        <div class="lines"><b>${esc(c.name||'')}</b>\nEmpanelled: ${esc(c.emp||'-')}\n\nIPD: ${esc(c.ipd||'-')}\n\nOPD: ${esc(c.opd||'-')}</div>
+        <div class="lines"><b>${esc(c.name||'')}</b>\nEmpanelled: ${esc(c.emp||'-')}\nTime period: ${esc(c.tp||'-')}\n\nIPD: ${esc(c.ipd||'-')}\n\nOPD: ${esc(c.opd||'-')}\n\nContact persons: ${esc(c.cp||'-')}</div>
         <div class="eacts"><button class="btn" data-e="edit">Edit</button></div>
       </div></div></div>`;
     d.querySelector('.ehead').onclick=()=>d.classList.toggle('open');
@@ -2491,8 +2461,10 @@ function editCo(acr,card){
   box.innerHTML=`
     <div class="fld" style="margin-top:8px;"><label>Full name</label><input class="co-nm"></div>
     <div class="fld"><label>Empanelled (Y / N / Check)</label><input class="co-em"></div>
+    <div class="fld"><label>Time period (MOU validity)</label><input class="co-tp"></div>
     <div class="fld"><label>What we offer — IPD</label><textarea class="co-ip"></textarea></div>
     <div class="fld"><label>What we offer — OPD</label><textarea class="co-op"></textarea></div>
+    <div class="fld"><label>Contact persons</label><textarea class="co-cp"></textarea></div>
     <div class="eacts">
       <button class="btn pri" data-e="save">Save</button>
       <button class="btn" data-e="cancel">Cancel</button>
@@ -2500,14 +2472,18 @@ function editCo(acr,card){
     </div>`;
   box.querySelector('.co-nm').value=c.name||'';
   box.querySelector('.co-em').value=c.emp||'';
+  box.querySelector('.co-tp').value=c.tp||'';
   box.querySelector('.co-ip').value=c.ipd||'';
   box.querySelector('.co-op').value=c.opd||'';
+  box.querySelector('.co-cp').value=c.cp||'';
   box.querySelector('[data-e="save"]').onclick=()=>{
     cos[acr]={
       name:box.querySelector('.co-nm').value.trim(),
       emp:box.querySelector('.co-em').value.trim(),
+      tp:box.querySelector('.co-tp').value.trim(),
       ipd:box.querySelector('.co-ip').value.trim(),
-      opd:box.querySelector('.co-op').value.trim()
+      opd:box.querySelector('.co-op').value.trim(),
+      cp:box.querySelector('.co-cp').value.trim()
     };
     saveCos(); renderCos(); toast(acr+' updated');
   };
@@ -2523,7 +2499,7 @@ async function addCo(){
   if(!n)return;
   const key=n.trim().toUpperCase(); if(!key)return;
   if(Object.keys(cos).some(k=>k.toLowerCase()===key.toLowerCase())){toast(key+' already exists','warn');return;}
-  cos[key]={name:'',emp:'Y',ipd:'',opd:''}; saveCos(); renderCos();
+  cos[key]={name:'',emp:'Y',tp:'',ipd:'',opd:'',cp:''}; saveCos(); renderCos();
   toast(key+' added — tap it and Edit to fill details');
 }
 
@@ -2616,7 +2592,6 @@ function init(){
   $('drawerBg').onclick=closeDrawer;
   $('dwBulk').onclick=openBulk;
   $('dwMail').onclick=openMailApp;
-  $('dwTasks').onclick=toggleTasks;
   $('bulkCancel').onclick=closeBulk;
   $('bulkSubmit').onclick=submitBulk;
   $('bulkCopy').onclick=copyBulkPrompt;
