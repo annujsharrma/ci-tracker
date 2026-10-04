@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#10241F">
+<meta name="theme-color" content="#0B0D10">
 <meta name="description" content="MediTrack — follow-up tracker for the Corporate & International Desk, SGRH">
 <title>MediTrack</title>
 <link rel="manifest" href="manifest.json">
@@ -16,15 +16,15 @@
    Design tokens
    ================================================================ */
 :root{
-  /* color — warm ivory desk, deep forest, brass accent */
-  --bg:#F3EFE6;            --surface:#FFFCF7;       --surface-2:#EBE4D6;
-  --ink:#14211D;           --ink-2:#3A4A44;         --muted:#6D766F;
-  --faint:#9A9488;         --line:#E4DCCB;          --line-2:#D2C7B2;
-  --brand:#10241F;
-  --accent:#1C6B52;        --accent-soft:#E5F1EB;
-  --warn:#9A6412;          --warn-soft:#F8EEDC;
-  --danger:#A33B32;        --danger-soft:#F8E8E5;
-  --brass:#A68456;         --brass-soft:#F3E7D4;
+  /* color — premium dark, brass accent */
+  --bg:#0E1013;            --surface:#171A1E;       --surface-2:#22262C;
+  --ink:#F4F1EA;           --ink-2:#D7D2C8;         --muted:#A39E94;
+  --faint:#7C776E;         --line:#2C3138;          --line-2:#3A4048;
+  --brand:#C4A574;
+  --accent:#8FBF9A;        --accent-soft:#1C2A24;
+  --warn:#E0B15A;          --warn-soft:#2C2416;
+  --danger:#E08A80;        --danger-soft:#2C1A18;
+  --brass:#C4A574;         --brass-soft:#2A241C;
   /* radius */
   --r-sm:12px; --r-md:16px; --r-lg:22px; --r-xl:28px; --r-full:999px;
   /* elevation */
@@ -37,8 +37,8 @@
   /* device */
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
-  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
-  --sans:"Avenir Next","Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --serif:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",sans-serif;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue",sans-serif;
 }
 
 /* ================================================================
@@ -50,8 +50,8 @@ html{-webkit-text-size-adjust:100%}
 body{
   font-family:var(--sans);
   background:
-    radial-gradient(900px 420px at 100% -10%, rgba(166,132,86,.16), transparent 55%),
-    radial-gradient(700px 380px at -10% 8%, rgba(28,107,82,.08), transparent 50%),
+    radial-gradient(900px 420px at 100% -10%, rgba(196,165,116,.12), transparent 55%),
+    radial-gradient(700px 380px at -10% 8%, rgba(143,191,154,.06), transparent 50%),
     var(--bg);
   color:var(--ink);
   overflow-x:clip;
@@ -457,69 +457,69 @@ a{-webkit-tap-highlight-color:transparent}
 body{letter-spacing:.005em}
 .hero{
   background:
-    radial-gradient(420px 180px at 88% 0%, rgba(166,132,86,.28), transparent 60%),
-    linear-gradient(165deg,#1B3D34 0%, #10241F 48%, #0B1916 100%);
+    radial-gradient(420px 180px at 88% 0%, rgba(196,165,116,.22), transparent 60%),
+    linear-gradient(165deg,#1A1E24 0%, #101317 52%, #0B0D10 100%);
   border-radius:0 0 32px 32px;
   padding:calc(22px + var(--safe-t)) 22px 58px;
   box-shadow:0 18px 40px rgba(16,36,31,.18);
 }
 .hero::before{
   content:"";position:absolute;left:22px;right:22px;bottom:18px;height:1px;
-  background:linear-gradient(90deg, transparent, rgba(166,132,86,.85), transparent);
+  background:linear-gradient(90deg, transparent, rgba(196,165,116,.7), transparent);
 }
 .hero::after{
   background:radial-gradient(circle, rgba(255,248,236,.10), transparent 68%);
 }
 .brand-logo{border-radius:14px;border:1px solid rgba(232,214,180,.35);box-shadow:0 8px 18px rgba(0,0,0,.28)}
-.eyebrow{color:#CDB892;letter-spacing:.18em;font-weight:650}
+.eyebrow{color:#C4A574;letter-spacing:.18em;font-weight:650}
 .hero h1{font-family:var(--serif);font-weight:650;font-size:28px;letter-spacing:-.03em}
-.hero .iconbtn{background:rgba(255,248,236,.08);border-color:rgba(232,214,180,.28);color:#F6EFE4}
+.hero .iconbtn{background:rgba(255,248,236,.06);border-color:rgba(196,165,116,.28);color:#F4F1EA}
 .counts{gap:12px;margin-top:-38px}
 .count{
-  border:1px solid rgba(255,252,247,.7);
+  border:1px solid rgba(196,165,116,.22);
   border-radius:18px;
   padding:14px 14px 12px;
-  background:linear-gradient(180deg,#FFFcf8,#F7F1E6);
+  background:linear-gradient(180deg,#1E2228,#171A1E);
   box-shadow:var(--sh-md);
 }
 .count b{font-family:var(--serif);font-size:28px;font-weight:650}
 .count span{letter-spacing:.12em;font-size:10px}
 .srchbox input{
-  border-radius:18px;background:rgba(255,252,247,.92);
+  border-radius:18px;background:#171A1E;
   border-color:rgba(210,199,178,.9);min-height:50px;
   box-shadow:0 8px 20px rgba(16,36,31,.04);
 }
 .tabs{
-  background:rgba(255,252,247,.72);
+  background:#171A1E;
   border:1px solid var(--line);
   box-shadow:var(--sh-sm);
   padding:5px;
 }
 .tab{letter-spacing:.01em}
-.tab.on{background:#10241F;color:#F6EFE4;box-shadow:0 8px 16px rgba(16,36,31,.18)}
+.tab.on{background:#C4A574;color:#14120E;box-shadow:0 8px 16px rgba(0,0,0,.28)}
 .card{
   border-radius:22px;padding:18px 16px 16px;
-  background:linear-gradient(180deg,#FFFcf8 0%, #FBF7F0 100%);
-  border-color:#E7DFD0;
+  background:linear-gradient(180deg,#1C2026 0%, #171A1E 100%);
+  border-color:#2C3138;
   box-shadow:0 10px 24px rgba(16,36,31,.05);
 }
 .who .nm{font-family:var(--serif);font-size:19px;font-weight:650;letter-spacing:-.02em}
 .dchip{border-radius:14px;min-width:88px}
-.pill{background:#F4EEE3;border:1px solid rgba(210,199,178,.7);letter-spacing:.01em}
-.pill.cat{background:#10241F;border-color:#10241F}
+.pill{background:#22262C;border:1px solid #3A4048;letter-spacing:.01em}
+.pill.cat{background:#C4A574;border-color:#C4A574;color:#14120E}
 .btn{border-radius:14px;letter-spacing:.01em}
-.btn.pri{background:#10241F}
+.btn.pri{background:#C4A574;color:#14120E;border-color:#C4A574}
 .fab{
-  background:linear-gradient(135deg,#21493D,#10241F);
+  background:linear-gradient(135deg,#D4B78A,#C4A574);color:#14120E;
   box-shadow:0 16px 30px rgba(16,36,31,.28), 0 0 0 1px rgba(166,132,86,.35);
   letter-spacing:.01em;
 }
-.fab.secondary{background:#FFFCF7}
+.fab.secondary{background:#171A1E;color:#F4F1EA}
 .sheet{border-radius:28px 28px 0 0}
 .sheet h2,.panel-hdr h2,.drawer-hd h2{font-family:var(--serif);font-weight:650;letter-spacing:-.02em}
-.fld input,.fld select,.fld textarea{background:#FFFcf8;border-color:#E4DCCB;border-radius:14px}
-.drawer{background:#FFFCF7}
-.empty .ic{background:#F4EEE3}
+.fld input,.fld select,.fld textarea{background:#121418;border-color:#2C3138;border-radius:14px;color:#F4F1EA}
+.drawer{background:#121418}
+.empty .ic{background:#22262C}
 
 </style>
 </head>
