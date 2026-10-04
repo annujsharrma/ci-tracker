@@ -534,6 +534,20 @@ body{letter-spacing:.005em}
 .hero .iconbtn{position:absolute;right:0;top:50%;transform:translateY(-50%)}
 .hero .iconbtn:active{transform:translateY(-50%) scale(.92)}
 
+
+/* kill the square Android tap flash; press should follow the rounded shape */
+html,body,button,a,.count,.tab,.btn,.fab,.card,.menuitem,.dw-item,.iconbtn{
+  -webkit-tap-highlight-color:transparent;
+}
+.count{
+  overflow:hidden;
+  touch-action:manipulation;
+  transition:transform var(--t-fast) var(--ease),box-shadow var(--t-fast) ease,filter var(--t-fast) ease;
+}
+.count:active{transform:scale(.97);filter:brightness(1.12)}
+.tab,.btn,.fab,.iconbtn,.menuitem,.dw-item{overflow:hidden}
+:focus:not(:focus-visible){outline:none}
+
 </style>
 </head>
 <body>
