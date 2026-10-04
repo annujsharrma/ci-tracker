@@ -521,6 +521,19 @@ body{letter-spacing:.005em}
 .drawer{background:#121418}
 .empty .ic{background:#22262C}
 
+
+/* centre SGRH + MediTrack; keep menu logo left and reference right */
+.hero-top{min-height:44px}
+.brand{position:static}
+.brand > div{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;
+}
+.eyebrow{text-align:center}
+.hero h1{text-align:center}
+.hero .iconbtn{position:absolute;right:0;top:50%;transform:translateY(-50%)}
+.hero .iconbtn:active{transform:translateY(-50%) scale(.92)}
+
 </style>
 </head>
 <body>
