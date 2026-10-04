@@ -100,8 +100,8 @@ a{-webkit-tap-highlight-color:transparent}
 
 /* stats — float over the hero edge */
 .counts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 20px;margin-top:-34px;position:relative;z-index:1}
-.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-md);cursor:pointer;user-select:none;-webkit-user-select:none;transition:transform var(--t-fast) var(--ease),box-shadow var(--t-fast) ease}
-.count:active{transform:scale(.96)}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-md);cursor:default;user-select:none;-webkit-user-select:none;transition:transform var(--t-fast) var(--ease),box-shadow var(--t-fast) ease}
+.count:active{transform:none}
 .count b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1}
 .count span{display:block;margin-top:3px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
 .count.late b{color:var(--danger)}
@@ -544,7 +544,7 @@ html,body,button,a,.count,.tab,.btn,.fab,.card,.menuitem,.dw-item,.iconbtn{
   touch-action:manipulation;
   transition:transform var(--t-fast) var(--ease),box-shadow var(--t-fast) ease,filter var(--t-fast) ease;
 }
-.count:active{transform:scale(.97);filter:brightness(1.12)}
+.count:active{transform:none;filter:none}
 .tab,.btn,.fab,.iconbtn,.menuitem,.dw-item{overflow:hidden}
 :focus:not(:focus-visible){outline:none}
 
@@ -569,8 +569,8 @@ html,body,button,a,.count,.tab,.btn,.fab,.card,.menuitem,.dw-item,.iconbtn{
   </header>
 
   <div class="counts">
-    <div class="count late"><b id="cLate">0</b><span>Action due</span></div>
-    <div class="count pend"><b id="cPend">0</b><span>Waiting</span></div>
+    <div class="count late"><b id="cLate">0</b><span>Domestic</span></div>
+    <div class="count pend"><b id="cPend">0</b><span>International</span></div>
     <div class="count open"><b id="cOpen">0</b><span>Open</span></div>
   </div>
 
@@ -1449,11 +1449,11 @@ function render(){
     b.textContent=tabCounts[k]?`${base} · ${tabCounts[k]}`:base;
   });
 
-  // Global stat cards — a stable desk overview that does NOT change per tab.
-  // Action due = anything urgent; Waiting = awaiting a response (never admitted); Open = admitted.
-  $('cLate').textContent=cases.filter(c=>state(c)==='late').length;
-  $('cPend').textContent=cases.filter(c=>pendingResp(c)&&state(c)!=='late').length;
-  $('cOpen').textContent=cases.filter(openStat).length;
+  // Header numbers follow the tabs. Domestic and International match those lists.
+  // Open is the total across all three tabs. Tapping a number does not change the tab.
+  $('cLate').textContent=tabCounts.domestic;
+  $('cPend').textContent=tabCounts.international;
+  $('cOpen').textContent=tabCounts.domestic+tabCounts.international+tabCounts.open;
   const late=pool.filter(c=>state(c)==='late').length;   // for the tab-specific note below
 
   let show=pool;
@@ -2657,14 +2657,7 @@ function init(){
   $('btnDelete').onclick=deleteEditingCase;
   $('btnRef').onclick=openMenu;
 
-  /* stat tiles jump to the matching tab */
-  $('cPend').parentElement.onclick=()=>setTab('domestic');
-  $('cOpen').parentElement.onclick=()=>setTab('open');
-  $('cLate').parentElement.onclick=()=>{
-    const domLate=cases.some(c=>c.cat!=='international'&&c.status==='pending'&&state(c)==='late');
-    const intlLate=cases.some(c=>c.cat==='international'&&pendingResp(c)&&state(c)==='late');
-    setTab(domLate?'domestic':intlLate?'international':'open');
-  };
+  /* header numbers are readouts only — they do not switch the tab */
 
   $('fabEmail').onclick=openEmailSheet;
   $('emType').onchange=renderEmailFields;
