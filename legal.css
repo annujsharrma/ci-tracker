@@ -1,0 +1,24 @@
+/* Legal pages. High contrast on purpose. Not glass. */
+html{color-scheme:light only}
+body{
+  margin:0;background:#F6F3EE;color:#141414;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+  line-height:1.5;letter-spacing:-.011em;
+}
+a{color:#0B3F9A}
+a:focus-visible,button:focus-visible{outline:2px solid #0B3F9A;outline-offset:3px}
+.wrap{max-width:720px;margin:0 auto;padding:24px 18px 64px}
+header{margin-bottom:18px}
+.back{font-size:15px;font-weight:650}
+h1{font-size:32px;line-height:1.15;margin:10px 0 6px}
+.meta{color:#3F3832;font-size:14px;margin:0}
+article{background:#fff;border-radius:16px;padding:18px 16px 8px}
+h2{font-size:18px;margin:22px 0 6px}
+p,li{font-size:16px}
+ul{padding-left:1.2em}
+table{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0 16px}
+th,td{text-align:left;vertical-align:top;border-bottom:1px solid #E4DDD4;padding:8px 6px}
+th{font-size:13px;letter-spacing:.02em}
+.note{background:#F4EFE6;border-radius:12px;padding:12px 14px;margin:12px 0}
+footer{margin-top:18px;color:#3F3832;font-size:14px}
+footer nav{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px}
