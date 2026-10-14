@@ -1,5 +1,5 @@
-const CACHE = 'meditrack-v43';
-const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'meditrack-v44';
+const FILES = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './privacy.html', './terms.html', './cookies.html', './refund.html', './legal.css'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
